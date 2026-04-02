@@ -89,24 +89,28 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // ── Google OAuth ────────────────────────────────────────────
-  Future<void> _signInWithGoogle() async {
-    setState(() => _googleLoading = true);
-    try {
-      await _sb.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: kIsWeb ? _redirectUrl() : 'io.supabase.restoadmin://login-callback',
-        authScreenLaunchMode: kIsWeb
-            ? LaunchMode.platformDefault
-            : LaunchMode.externalApplication,
-      );
-      // On web — page navigates away, stream handles routing on return.
-      // On mobile — stream fires on return, main.dart navigates.
-    } catch (e) {
-      _snack('Google sign-in failed. Please try again.', isError: true);
-      if (mounted) setState(() => _googleLoading = false);
-    }
+  String _redirectUrl() {
+  if (kIsWeb) {
+    return 'https://takshraval21.github.io/restaurant-management-system';
   }
+  return 'io.supabase.restoadmin://login-callback';
+}
 
+Future<void> _signInWithGoogle() async {
+  setState(() => _googleLoading = true);
+  try {
+    await _sb.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? _redirectUrl() : 'io.supabase.restoadmin://login-callback',
+      authScreenLaunchMode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
+    );
+  } catch (e) {
+    _snack('Google sign-in failed. Please try again.', isError: true);
+    if (mounted) setState(() => _googleLoading = false);
+  }
+}
   // ── Apple OAuth ─────────────────────────────────────────────
   Future<void> _signInWithApple() async {
     setState(() => _appleLoading = true);
@@ -194,7 +198,6 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-  String _redirectUrl() => 'http://localhost:54872';
 
   void _snack(String msg, {bool isError = false}) {
     if (!mounted) return;

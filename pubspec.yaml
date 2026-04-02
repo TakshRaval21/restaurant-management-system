@@ -26,6 +26,7 @@ dependencies:
   dotted_border: ^2.0.0
   pdf: ^3.10.8
   printing: ^5.13.1
+  lottie: ^3.1.0
 
 
 dev_dependencies:
@@ -39,3 +40,4 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/animations/

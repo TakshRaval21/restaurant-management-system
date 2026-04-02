@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lottie/lottie.dart' hide Marker;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:admin_side/core/services/restaurant_service.dart'; 
 import '../../core/config/app_theme.dart';
@@ -591,14 +592,18 @@ class _SetupRestaurantScreenState extends State<SetupRestaurantScreen>
                     decoration: BoxDecoration(
                         color: AppColors.contentBg,
                         borderRadius: BorderRadius.circular(12)),
-                    child: const Center(
+                    child: Center(
                         child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                          CircularProgressIndicator(
-                              color: AppColors.primary, strokeWidth: 2),
-                          SizedBox(height: 10),
-                          Text('Uploading...',
+                            Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),
+                          const SizedBox(height: 10),
+                          const Text('Uploading...',
                               style: TextStyle(
                                   color: AppColors.textMid, fontSize: 13))
                         ])))
@@ -801,11 +806,15 @@ class _SetupRestaurantScreenState extends State<SetupRestaurantScreen>
                     borderRadius: BorderRadius.circular(12))),
             child: _saving
                 ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const SizedBox(
+                    SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2)),
+                          child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),),
                     const SizedBox(width: 10),
                     Text(_uploading ? 'Uploading images...' : 'Saving...',
                         style: const TextStyle(

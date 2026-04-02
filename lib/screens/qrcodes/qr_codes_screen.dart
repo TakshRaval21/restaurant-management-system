@@ -1,5 +1,6 @@
 import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/app_theme.dart';
 
@@ -151,7 +152,12 @@ Widget build(BuildContext context) {
   final cols = Responsive.gridCount(context, mobile: 2, tablet: 3, desktop: 4);
   // ← No AdminLayout wrapper
   return _loading
-      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      ? Center(  child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
       : Padding(
           padding: Responsive.padding(context),
           child: Column(

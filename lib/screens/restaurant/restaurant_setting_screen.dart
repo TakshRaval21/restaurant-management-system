@@ -1,6 +1,7 @@
 import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:admin_side/core/services/restaurant_service.dart';
 import '../../core/config/app_theme.dart';
@@ -123,7 +124,12 @@ Widget build(BuildContext context) {
   final isMobile = Responsive.isMobile(context);
   // ← No AdminLayout wrapper
   return _loading
-      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      ? Center(  child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
       : SingleChildScrollView(
           padding: Responsive.padding(context),
           child: Form(
@@ -259,11 +265,15 @@ Widget build(BuildContext context) {
                           child: ElevatedButton(
                             onPressed: _saving ? null : _save,
                             child: _saving
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 18,
                                     height: 18,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2))
+                                     child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
                                 : const Text('Save Changes',
                                     style: TextStyle(
                                         fontSize: 14,

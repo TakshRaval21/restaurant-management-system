@@ -3,8 +3,9 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "be91d359e0d0ecdd2fac71de8c850e6e",
-"assets/AssetManifest.bin.json": "48da1fe81e4b620d46517b4f00e38ab4",
+const RESOURCES = {"assets/AssetManifest.bin": "f4afa950c44ee077db48122935209a7e",
+"assets/AssetManifest.bin.json": "ebdd1a439e9e47ae40cd492d2ad34a5c",
+"assets/assets/animations/loader.json": "5767afabae4a120fbaed7b0d2cc1d23a",
 "assets/assets/images/Brownie%2520with%2520Ice%2520Cream.jpg": "532b7568bcf10a53c0960ef11d409471",
 "assets/assets/images/Butter%2520naan.jpg": "dc50cba36360d86bd8a1f45fd478fc90",
 "assets/assets/images/Chocolate%2520Lava%2520Cake.jpg": "a985b986272d6d72097aa58ab9fc320f",
@@ -44,7 +45,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "be91d359e0d0ecdd2fac71de8c850e6e
 "assets/assets/images/White%2520Sauce%2520Pasta.jpg": "fb8e5fe16880f34c263a5ce73fd29e23",
 "assets/FontManifest.json": "dc3d03800ccca4601324923c0b1d6d57",
 "assets/fonts/MaterialIcons-Regular.otf": "432d5ac8a5e429faa0902a8b9bad1183",
-"assets/NOTICES": "eaace2a4dd09418574077e64d09d7aa1",
+"assets/NOTICES": "b31cde291be7ab0cd22517ee25f55566",
 "assets/packages/cupertino_icons/assets/CupertinoIcons.ttf": "33b7d9392238c04c131b6ce224e13711",
 "assets/packages/flutter_map/lib/assets/flutter_map_logo.png": "208d63cc917af9713fc9572bd5c09362",
 "assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8cb9b6ce",
@@ -63,14 +64,14 @@ const RESOURCES = {"assets/AssetManifest.bin": "be91d359e0d0ecdd2fac71de8c850e6e
 "canvaskit/skwasm_heavy.wasm": "b0be7910760d205ea4e011458df6ee01",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "51ec23203cf2c258a4a6adb1e26ed3d0",
+"flutter_bootstrap.js": "923a00e4eb4ed88878a63875ac93b5c3",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
-"index.html": "e29c97877d6cd8e52c7908b3c9e32dfc",
-"/": "e29c97877d6cd8e52c7908b3c9e32dfc",
-"main.dart.js": "ce0c1f981d3c21d93b8e3942d1989ce8",
+"index.html": "a6b6a880caa0fef0e34f6dd39c86a77b",
+"/": "a6b6a880caa0fef0e34f6dd39c86a77b",
+"main.dart.js": "e47ac36b025c833bc31c0cd7d3890e6b",
 "manifest.json": "ae2474aba56e78c234e95c833c9988d8",
 "version.json": "c6d1d3cf933fe2324749bacdacf47ae6"};
 // The application shell files that are downloaded before a service worker can

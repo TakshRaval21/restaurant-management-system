@@ -1,6 +1,7 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/signup_screen.dart';
@@ -123,6 +124,76 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  Future<void> _forgotPassword() async {
+  final emailCtrl = TextEditingController(text: _emailCtrl.text.trim());
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Reset Password',
+          style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF141F1D))),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('Enter your email and we\'ll send you a reset link.',
+            style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7B7A))),
+        const SizedBox(height: 16),
+        TextField(
+          controller: emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF141F1D)),
+          decoration: InputDecoration(
+            hintText: 'manager@restaurant.com',
+            hintStyle: const TextStyle(color: Color(0xFF9EAEAC)),
+            prefixIcon: const Icon(Icons.email_outlined, size: 18, color: Color(0xFF9EAEAC)),
+            filled: true, fillColor: const Color(0xFFF4F7F6),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFD4E0DE))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFD4E0DE))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF2E8B80), width: 1.8)),
+          ),
+        ),
+      ]),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7B7A))),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E8B80),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          child: const Text('Send Reset Link'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true) return;
+
+  final email = emailCtrl.text.trim();
+  if (email.isEmpty || !email.contains('@')) {
+    _snack('Please enter a valid email address.', isError: true);
+    return;
+  }
+
+  try {
+    await _sb.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'http://localhost:54872/reset-password', // change for production
+    );
+    _snack('Reset link sent! Check your inbox.');
+  } on AuthException catch (e) {
+    _snack(e.message, isError: true);
+  } catch (e) {
+    _snack('Something went wrong. Try again.', isError: true);
+  }
+}
+
   String _redirectUrl() => 'http://localhost:54872';
 
   void _snack(String msg, {bool isError = false}) {
@@ -237,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(width: 8),
                   const Text('Remember me', style: TextStyle(fontSize: 13, color: Color(0xFF6B7B7A))),
                   const Spacer(),
-                  TextButton(onPressed: () {}, style: TextButton.styleFrom(foregroundColor: const Color(0xFF2E8B80)),
+                  TextButton(onPressed: _forgotPassword, style: TextButton.styleFrom(foregroundColor: const Color(0xFF2E8B80)),
                       child: const Text('Forgot password?', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                 ]),
                 const SizedBox(height: 20),
@@ -251,7 +322,12 @@ class _LoginScreenState extends State<LoginScreen>
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         disabledBackgroundColor: const Color(0xFF2E8B80).withOpacity(0.6)),
                     child: _loading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        ? SizedBox(width: 20, height: 20,   child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
                         : const Text('Sign in', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                   ),
                 ),
@@ -272,7 +348,12 @@ class _LoginScreenState extends State<LoginScreen>
                   Expanded(child: OutlinedButton.icon(
                     onPressed: (_loading || _googleLoading || _appleLoading) ? null : _signInWithGoogle,
                     icon: _googleLoading
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Color(0xFF2E8B80), strokeWidth: 2))
+                        ? SizedBox(width: 16, height: 16,   child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
                         : Image.asset('assets/images/google.png', height: 18,
                             errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 20)),
                     label: const Text('Google', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
@@ -285,8 +366,13 @@ class _LoginScreenState extends State<LoginScreen>
                   Expanded(child: ElevatedButton.icon(
                     onPressed: (_loading || _googleLoading || _appleLoading) ? null : _signInWithApple,
                     icon: _appleLoading
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.apple, size: 18),
+                          ? SizedBox(width: 16, height: 16,   child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
+                          : const Icon(Icons.apple, size: 18),
                     label: const Text('Apple', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF141F1D),
                         foregroundColor: Colors.white, elevation: 0,

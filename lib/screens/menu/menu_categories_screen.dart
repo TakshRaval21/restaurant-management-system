@@ -4,6 +4,7 @@ import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:admin_side/core/services/restaurant_service.dart';
 import '../../core/config/app_theme.dart';
@@ -412,7 +413,12 @@ Widget build(BuildContext context) {
   final isMobile = Responsive.isMobile(context);
   // ← No AdminLayout wrapper
   return _loading
-      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      ? Center(  child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
       : Column(children: [
           _buildHeader(isMobile),
           Expanded(
@@ -1191,12 +1197,16 @@ class _ItemCardState extends State<_ItemCard> {
 
   Widget _shimmer() => Container(
         color: const Color(0xFFEEF2F1),
-        child: const Center(
+        child: Center(
             child: SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.primary))),
+                  child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)),
       );
 }
 

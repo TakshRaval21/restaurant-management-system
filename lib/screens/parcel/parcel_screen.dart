@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:admin_side/core/services/restaurant_service.dart'; // ✅
 import '../../core/config/app_theme.dart';
@@ -208,7 +209,12 @@ Widget build(BuildContext context) {
   final isMobile = Responsive.isMobile(context);
   // ← No AdminLayout wrapper, return content directly
   return _loading
-      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      ? Center(  child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
       : isMobile
           ? _buildMobileLayout()
           : _buildDesktopLayout();
@@ -515,8 +521,13 @@ Widget build(BuildContext context) {
             child: ElevatedButton.icon(
               onPressed: (_placing || _cart.isEmpty) ? null : _placeOrder,
               icon: _placing
-                  ? const SizedBox(width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? SizedBox(width: 16, height: 16,
+                        child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
                   : const Icon(Icons.send_rounded, size: 18),
               label: Text(_placing
                   ? 'Placing Order...'

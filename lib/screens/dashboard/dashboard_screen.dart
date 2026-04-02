@@ -1,15 +1,20 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:admin_side/core/config/routes.dart';
 import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:admin_side/core/services/restaurant_service.dart'; // ✅
+import 'package:admin_side/core/services/restaurant_service.dart';
 import '../../core/config/app_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  /// Called when the user clicks a table action button.
+  /// Pass the target section index (2 = Tables).
+  final void Function(int index)? onNavigate;
+
+  const DashboardScreen({super.key, this.onNavigate});
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -58,7 +63,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     final rid = restaurant['id'] as String;
     final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day).toIso8601String();
+    final todayStart =
+        DateTime(now.year, now.month, now.day).toIso8601String();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
     final weekStartStr =
         DateTime(weekStart.year, weekStart.month, weekStart.day)
@@ -86,11 +92,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _revenueToday = todayOrders.fold(
         0.0, (s, o) => s + ((o['total_amount'] as num?)?.toDouble() ?? 0));
     _kitchenOrders = todayOrders
-        .where((o) => o['status'] == 'preparing' || o['status'] == 'confirmed')
+        .where(
+            (o) => o['status'] == 'preparing' || o['status'] == 'confirmed')
         .length;
     final tables = results[1] as List<dynamic>;
     _liveTables = List<Map<String, dynamic>>.from(tables);
-    _activeTables = _liveTables.where((t) => t['status'] == 'occupied').length;
+    _activeTables =
+        _liveTables.where((t) => t['status'] == 'occupied').length;
     _totalTables = _liveTables.length;
     final weekOrders = results[2] as List;
     final revenue = List<double>.filled(7, 0);
@@ -129,35 +137,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ..subscribe();
   }
 
-  // build() — remove AdminLayout wrapper
-@override
-Widget build(BuildContext context) {
-  final pad = Responsive.padding(context);
-  return _loading
-      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-      : SingleChildScrollView(
-          padding: pad,
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStatCards(context),
-                const SizedBox(height: 20),
-                _buildChartsRow(context),
-                const SizedBox(height: 20),
-                _buildLiveTables(context),
-              ]),
-        );
-}
+  /// Switch to Tables tab (index 2) via the parent layout callback.
+  void _goToTables() => widget.onNavigate?.call(2);
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = Responsive.padding(context);
+    return _loading
+        ? Center(
+            child:
+                 Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
+        : SingleChildScrollView(
+            padding: pad,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatCards(context),
+                  const SizedBox(height: 20),
+                  _buildChartsRow(context),
+                  const SizedBox(height: 20),
+                  _buildLiveTables(context),
+                ]),
+          );
+  }
 
   Widget _buildStatCards(BuildContext context) {
-    // ✅ Dynamic currency symbol from RestaurantService
     final fmt = NumberFormat.currency(
         symbol: RestaurantService.instance.symbol, decimalDigits: 2);
     final isMobile = Responsive.isMobile(context);
     return LayoutBuilder(builder: (ctx, constraints) {
       final cols = isMobile ? 2 : 4;
       const spacing = 12.0;
-      final cardW = (constraints.maxWidth - spacing * (cols - 1)) / cols;
+      final cardW =
+          (constraints.maxWidth - spacing * (cols - 1)) / cols;
       final cards = [
         _StatCard(
             icon: Icons.receipt_long_outlined,
@@ -173,7 +190,7 @@ Widget build(BuildContext context) {
             iconBg: AppColors.primaryLight.withOpacity(0.1),
             iconColor: AppColors.primaryLight,
             label: 'Total Revenue Today',
-            value: fmt.format(_revenueToday), // ✅ dynamic symbol
+            value: fmt.format(_revenueToday),
             badge: '+8.5%',
             badgeColor: AppColors.green,
             badgeBg: AppColors.greenBg),
@@ -200,20 +217,20 @@ Widget build(BuildContext context) {
           spacing: spacing,
           runSpacing: spacing,
           children: cards
-              .map((c) => SizedBox(width: cardW.clamp(130.0, 360.0), child: c))
+              .map((c) =>
+                  SizedBox(width: cardW.clamp(130.0, 360.0), child: c))
               .toList());
     });
   }
 
   Widget _buildChartsRow(BuildContext context) {
-    // ✅ Dynamic currency symbol from RestaurantService
     final fmt = NumberFormat.currency(
         symbol: RestaurantService.instance.symbol, decimalDigits: 0);
     final isMobile = Responsive.isMobile(context);
     final r = _ChartCard(
         title: 'Daily Revenue',
         subtitle: 'Weekly revenue overview',
-        value: fmt.format(_weeklyTotal), // ✅ dynamic symbol
+        value: fmt.format(_weeklyTotal),
         trend: '+15% from last week',
         trendPositive: true,
         chart: _LineChart(values: _weeklyRevenue));
@@ -223,9 +240,12 @@ Widget build(BuildContext context) {
         value: _ordersTotal.toString(),
         trend: '-3% from yesterday',
         trendPositive: false,
-        chart:
-            _BarChart(values: _weeklyOrders.map((e) => e.toDouble()).toList()));
-    if (isMobile) return Column(children: [r, const SizedBox(height: 14), o]);
+        chart: _BarChart(
+            values: _weeklyOrders.map((e) => e.toDouble()).toList()));
+    if (isMobile) {
+      return Column(
+          children: [r, const SizedBox(height: 14), o]);
+    }
     return Row(children: [
       Expanded(child: r),
       const SizedBox(width: 16),
@@ -244,8 +264,9 @@ Widget build(BuildContext context) {
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark),
                 overflow: TextOverflow.ellipsis)),
+        // ── "Manage Floor Map →" now switches the content panel ──
         TextButton(
-          onPressed: () => {},
+          onPressed: _goToTables,
           child: Text(isMobile ? 'Manage →' : 'Manage Floor Map →',
               style: const TextStyle(
                   color: AppColors.primary,
@@ -261,7 +282,8 @@ Widget build(BuildContext context) {
                   size: 48, color: AppColors.textLight),
               SizedBox(height: 8),
               Text('No tables found', style: AppText.h4),
-              Text('Add tables in Tables Management', style: AppText.body),
+              Text('Add tables in Tables Management',
+                  style: AppText.body),
             ]))
           : GridView.builder(
               shrinkWrap: true,
@@ -273,10 +295,10 @@ Widget build(BuildContext context) {
                 childAspectRatio: 1.18,
               ),
               itemCount: _liveTables.length,
+              // ── Pass _goToTables — no Navigator, just index switch ──
               itemBuilder: (_, i) => _LiveTableCard(
                 data: _liveTables[i],
-                onAction: () => Navigator.pushReplacementNamed(
-                    context, AppRoutes.tableManagement),
+                onAction: _goToTables,
               ),
             ),
     ]);
@@ -309,38 +331,46 @@ class _StatCard extends StatelessWidget {
                   blurRadius: 12,
                   offset: Offset(0, 3))
             ]),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                    color: iconBg, borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: iconColor, size: 20)),
-            Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                    color: badgeBg, borderRadius: BorderRadius.circular(20)),
-                child: Text(badge,
-                    style: TextStyle(
-                        color: badgeColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700))),
-          ]),
-          const SizedBox(height: 12),
-          Text(label,
-              style: AppText.bodySmall, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(value,
-                  style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
-                      letterSpacing: -0.5))),
-        ]),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                            color: iconBg,
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Icon(icon, color: iconColor, size: 20)),
+                    Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Text(badge,
+                            style: TextStyle(
+                                color: badgeColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700))),
+                  ]),
+              const SizedBox(height: 12),
+              Text(label,
+                  style: AppText.bodySmall,
+                  overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value,
+                      style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.5))),
+            ]),
       );
 }
 
@@ -368,47 +398,53 @@ class _ChartCard extends StatelessWidget {
                   blurRadius: 12,
                   offset: Offset(0, 3))
             ]),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                          Text(title,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark),
+                              overflow: TextOverflow.ellipsis),
+                          Text(subtitle, style: AppText.bodySmall)
+                        ])),
+                    const SizedBox(width: 8),
+                    Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                      Text(title,
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textDark),
-                          overflow: TextOverflow.ellipsis),
-                      Text(subtitle, style: AppText.bodySmall)
-                    ])),
-                const SizedBox(width: 8),
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark)),
-                  Text(trend,
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              trendPositive ? AppColors.green : AppColors.red)),
-                ]),
-              ]),
-          const SizedBox(height: 16),
-          SizedBox(height: 120, child: chart),
-          const SizedBox(height: 10),
-          Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-                  .map((d) => Text(d, style: AppText.label))
-                  .toList()),
-        ]),
+                          Text(value,
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textDark)),
+                          Text(trend,
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: trendPositive
+                                      ? AppColors.green
+                                      : AppColors.red)),
+                        ]),
+                  ]),
+              const SizedBox(height: 16),
+              SizedBox(height: 120, child: chart),
+              const SizedBox(height: 10),
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children:
+                      ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+                          .map((d) => Text(d, style: AppText.label))
+                          .toList()),
+            ]),
       );
 }
 
@@ -449,7 +485,8 @@ class _LCP extends CustomPainter {
               colors: [
                 AppColors.primary.withOpacity(0.25),
                 AppColors.primary.withOpacity(0.01)
-              ]).createShader(Rect.fromLTWH(0, 0, s.width, s.height)));
+              ]).createShader(
+              Rect.fromLTWH(0, 0, s.width, s.height)));
     final lp = Paint()
       ..color = AppColors.primary
       ..strokeWidth = 2.5
@@ -457,9 +494,11 @@ class _LCP extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     final path = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (int i = 1; i < pts.length; i++) {
-      final cp1 = Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i - 1].dy);
+      final cp1 =
+          Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i - 1].dy);
       final cp2 = Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i].dy);
-      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, pts[i].dx, pts[i].dy);
+      path.cubicTo(
+          cp1.dx, cp1.dy, cp2.dx, cp2.dy, pts[i].dx, pts[i].dy);
     }
     c.drawPath(path, lp);
     for (final p in pts) {
@@ -500,11 +539,13 @@ class _BCP extends CustomPainter {
       final barH = (v[i] / maxV) * s.height * 0.85;
       c.drawRRect(
           RRect.fromRectAndRadius(
-              Rect.fromLTWH(
-                  gap * i + (gap - barW) / 2, s.height - barH, barW, barH),
+              Rect.fromLTWH(gap * i + (gap - barW) / 2,
+                  s.height - barH, barW, barH),
               const Radius.circular(5)),
           Paint()
-            ..color = i == today ? AppColors.primary : const Color(0xFFDDE8E6));
+            ..color = i == today
+                ? AppColors.primary
+                : const Color(0xFFDDE8E6));
     }
   }
 
@@ -525,7 +566,8 @@ class _LiveTableCard extends StatefulWidget {
 
 class _LiveTableCardState extends State<_LiveTableCard> {
   bool _hovered = false;
-  String get _status => widget.data['status'] as String? ?? 'available';
+  String get _status =>
+      widget.data['status'] as String? ?? 'available';
 
   (Color, Color, Color, String) get _cfg => switch (_status) {
         'occupied' => (
@@ -567,155 +609,200 @@ class _LiveTableCardState extends State<_LiveTableCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: _hovered ? accent.withOpacity(0.5) : AppColors.border,
+              color: _hovered
+                  ? accent.withOpacity(0.5)
+                  : AppColors.border,
               width: _hovered ? 1.5 : 1),
           boxShadow: [
             BoxShadow(
-                color: _hovered ? accent.withOpacity(0.12) : AppColors.shadow,
+                color: _hovered
+                    ? accent.withOpacity(0.12)
+                    : AppColors.shadow,
                 blurRadius: _hovered ? 14 : 8,
                 offset: const Offset(0, 3))
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(13),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 5,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius:
-                    const BorderRadius.horizontal(left: Radius.circular(13)),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Expanded(
-                          child: Text(
-                            (widget.data['section'] ?? 'Main Hall')
-                                .toString()
-                                .toUpperCase(),
-                            style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textLight,
-                                letterSpacing: 0.6),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                              color: badgeBg,
-                              borderRadius: BorderRadius.circular(20)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+          child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 5,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(13)),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Expanded(
+                              child: Text(
+                                (widget.data['section'] ?? 'Main Hall')
+                                    .toString()
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textLight,
+                                    letterSpacing: 0.6),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                             Container(
-                                width: 5,
-                                height: 5,
-                                decoration: BoxDecoration(
-                                    color: accent, shape: BoxShape.circle)),
-                            const SizedBox(width: 4),
-                            Text(badgeLabel,
-                                style: TextStyle(
-                                    color: badgeFg,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.3)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                  color: badgeBg,
+                                  borderRadius:
+                                      BorderRadius.circular(20)),
+                              child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                        width: 5,
+                                        height: 5,
+                                        decoration: BoxDecoration(
+                                            color: accent,
+                                            shape: BoxShape.circle)),
+                                    const SizedBox(width: 4),
+                                    Text(badgeLabel,
+                                        style: TextStyle(
+                                            color: badgeFg,
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.3)),
+                                  ]),
+                            ),
                           ]),
-                        ),
-                      ]),
-                      const SizedBox(height: 5),
-                      Text('Table ${widget.data['table_number']}',
-                          style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textDark)),
-                      Row(children: [
-                        const Icon(Icons.people_alt_outlined,
-                            size: 11, color: AppColors.textLight),
-                        const SizedBox(width: 3),
-                        Text('${widget.data['seats'] ?? 4} Seats',
-                            style: const TextStyle(
-                                fontSize: 11, color: AppColors.textLight)),
-                      ]),
-                      const SizedBox(height: 10),
-                      const Divider(color: AppColors.divider, height: 1),
-                      const SizedBox(height: 10),
-                      Expanded(child: _buildMiddle(accent)),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 32,
-                        child: _status == 'occupied'
-                            ? ElevatedButton.icon(
-                                onPressed: widget.onAction,
-                                icon: const Icon(Icons.receipt_long_outlined,
-                                    size: 13),
-                                label: const Text('View Order',
-                                    style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w700)),
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: EdgeInsets.zero,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8))),
-                              )
-                            : _status == 'reserved'
-                                ? OutlinedButton.icon(
+                          const SizedBox(height: 5),
+                          Text(
+                              'Table ${widget.data['table_number']}',
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textDark)),
+                          Row(children: [
+                            const Icon(Icons.people_alt_outlined,
+                                size: 11, color: AppColors.textLight),
+                            const SizedBox(width: 3),
+                            Text('${widget.data['seats'] ?? 4} Seats',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textLight)),
+                          ]),
+                          const SizedBox(height: 10),
+                          const Divider(
+                              color: AppColors.divider, height: 1),
+                          const SizedBox(height: 10),
+                          Expanded(child: _buildMiddle(accent)),
+                          const SizedBox(height: 10),
+
+                          // ── Action button — calls onAction which
+                          //    triggers _goToTables() in parent,
+                          //    switching the IndexedStack to index 2.
+                          //    No Navigator. Sidebar stays fixed. ──
+                          SizedBox(
+                            width: double.infinity,
+                            height: 32,
+                            child: _status == 'occupied'
+                                ? ElevatedButton.icon(
                                     onPressed: widget.onAction,
-                                    icon: const Icon(Icons.event_seat_outlined,
-                                        size: 13,
-                                        color: AppColors.statusReserved),
-                                    label: const Text('Reserved',
+                                    icon: const Icon(
+                                        Icons.receipt_long_outlined,
+                                        size: 13),
+                                    label: const Text('View Order',
                                         style: TextStyle(
                                             fontSize: 11.5,
-                                            fontWeight: FontWeight.w700)),
-                                    style: OutlinedButton.styleFrom(
-                                        foregroundColor:
-                                            AppColors.statusReserved,
-                                        side: BorderSide(
-                                            color: AppColors.statusReserved
-                                                .withOpacity(0.4)),
+                                            fontWeight:
+                                                FontWeight.w700)),
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
                                         padding: EdgeInsets.zero,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(8))),
+                                                BorderRadius.circular(
+                                                    8))),
                                   )
-                                : OutlinedButton.icon(
-                                    onPressed: widget.onAction,
-                                    icon: const Icon(Icons.add_circle_outline,
-                                        size: 13,
-                                        color: AppColors.statusAvailable),
-                                    label: const Text('Assign',
-                                        style: TextStyle(
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w700)),
-                                    style: OutlinedButton.styleFrom(
-                                        foregroundColor:
-                                            AppColors.statusAvailable,
-                                        side: BorderSide(
-                                            color: AppColors.statusAvailable
-                                                .withOpacity(0.4)),
-                                        padding: EdgeInsets.zero,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8))),
-                                  ),
-                      ),
-                    ]),
-              ),
-            ),
-          ]),
+                                : _status == 'reserved'
+                                    ? OutlinedButton.icon(
+                                        onPressed: widget.onAction,
+                                        icon: const Icon(
+                                            Icons.event_seat_outlined,
+                                            size: 13,
+                                            color: AppColors
+                                                .statusReserved),
+                                        label: const Text('Reserved',
+                                            style: TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight:
+                                                    FontWeight.w700)),
+                                        style:
+                                            OutlinedButton.styleFrom(
+                                                foregroundColor:
+                                                    AppColors
+                                                        .statusReserved,
+                                                side: BorderSide(
+                                                    color: AppColors
+                                                        .statusReserved
+                                                        .withOpacity(
+                                                            0.4)),
+                                                padding:
+                                                    EdgeInsets.zero,
+                                                shape:
+                                                    RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                    8))),
+                                      )
+                                    : OutlinedButton.icon(
+                                        onPressed: widget.onAction,
+                                        icon: const Icon(
+                                            Icons.add_circle_outline,
+                                            size: 13,
+                                            color: AppColors
+                                                .statusAvailable),
+                                        label: const Text('Assign',
+                                            style: TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight:
+                                                    FontWeight.w700)),
+                                        style:
+                                            OutlinedButton.styleFrom(
+                                                foregroundColor:
+                                                    AppColors
+                                                        .statusAvailable,
+                                                side: BorderSide(
+                                                    color: AppColors
+                                                        .statusAvailable
+                                                        .withOpacity(
+                                                            0.4)),
+                                                padding:
+                                                    EdgeInsets.zero,
+                                                shape:
+                                                    RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                    8))),
+                                      ),
+                          ),
+                        ]),
+                  ),
+                ),
+              ]),
         ),
       ),
     );
@@ -724,147 +811,173 @@ class _LiveTableCardState extends State<_LiveTableCard> {
   Widget _buildMiddle(Color accent) {
     switch (_status) {
       case 'occupied':
-        return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-                color: AppColors.statusOccupBg,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFFE0B2))),
-            child: Row(children: [
-              const Icon(Icons.timer_outlined,
-                  size: 13, color: AppColors.statusOccupied),
-              const SizedBox(width: 6),
-              Expanded(
-                  child: Text(widget.data['duration_text'] ?? 'Active',
+        return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                    color: AppColors.statusOccupBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: const Color(0xFFFFE0B2))),
+                child: Row(children: [
+                  const Icon(Icons.timer_outlined,
+                      size: 13, color: AppColors.statusOccupied),
+                  const SizedBox(width: 6),
+                  Expanded(
+                      child: Text(
+                          widget.data['duration_text'] ?? 'Active',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.statusOccupied),
+                          overflow: TextOverflow.ellipsis)),
+                  if (widget.data['current_total'] != null)
+                    Text(
+                      RestaurantService.instance.formatPrice(
+                          (widget.data['current_total'] as num)
+                              .toDouble(),
+                          decimalDigits: 0),
                       style: const TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.statusOccupied),
-                      overflow: TextOverflow.ellipsis)),
-              // ✅ Dynamic currency symbol for table current total
-              if (widget.data['current_total'] != null)
-                Text(
-                  RestaurantService.instance.formatPrice(
-                      (widget.data['current_total'] as num).toDouble(),
-                      decimalDigits: 0),
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark),
-                ),
-            ]),
-          ),
-          if (widget.data['guest_name'] != null) ...[
-            const SizedBox(height: 7),
-            Row(children: [
-              const CircleAvatar(
-                  radius: 10,
-                  backgroundColor: AppColors.primary,
-                  child: Icon(Icons.person, size: 11, color: Colors.white)),
-              const SizedBox(width: 6),
-              Expanded(
-                  child: Text(widget.data['guest_name'] ?? '',
-                      style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.textDark),
-                      overflow: TextOverflow.ellipsis)),
-            ]),
-          ],
-        ]);
+                    ),
+                ]),
+              ),
+              if (widget.data['guest_name'] != null) ...[
+                const SizedBox(height: 7),
+                Row(children: [
+                  const CircleAvatar(
+                      radius: 10,
+                      backgroundColor: AppColors.primary,
+                      child: Icon(Icons.person,
+                          size: 11, color: Colors.white)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                      child: Text(widget.data['guest_name'] ?? '',
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textDark),
+                          overflow: TextOverflow.ellipsis)),
+                ]),
+              ],
+            ]);
 
       case 'reserved':
-        final hex = widget.data['avatar_color_hex'] as String? ?? '26A69A';
-        final avatarColor = Color(int.parse('FF$hex', radix: 16));
-        return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Row(children: [
-            CircleAvatar(
-                radius: 14,
-                backgroundColor: avatarColor,
-                child: Text(widget.data['avatar_initials'] ?? '?',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700))),
-            const SizedBox(width: 8),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(widget.data['guest_name'] ?? '—',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark),
-                      overflow: TextOverflow.ellipsis),
-                  if (widget.data['reservation_time'] != null)
-                    Row(children: [
-                      const Icon(Icons.access_time_outlined,
-                          size: 11, color: AppColors.textLight),
-                      const SizedBox(width: 3),
-                      Text(widget.data['reservation_time'] ?? '',
+        final hex =
+            widget.data['avatar_color_hex'] as String? ?? '26A69A';
+        final avatarColor =
+            Color(int.parse('FF$hex', radix: 16));
+        return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(children: [
+                CircleAvatar(
+                    radius: 14,
+                    backgroundColor: avatarColor,
+                    child: Text(
+                        widget.data['avatar_initials'] ?? '?',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700))),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(widget.data['guest_name'] ?? '—',
                           style: const TextStyle(
-                              fontSize: 10.5, color: AppColors.textMid)),
-                    ]),
-                ])),
-          ]),
-        ]);
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textDark),
+                          overflow: TextOverflow.ellipsis),
+                      if (widget.data['reservation_time'] != null)
+                        Row(children: [
+                          const Icon(Icons.access_time_outlined,
+                              size: 11, color: AppColors.textLight),
+                          const SizedBox(width: 3),
+                          Text(
+                              widget.data['reservation_time'] ?? '',
+                              style: const TextStyle(
+                                  fontSize: 10.5,
+                                  color: AppColors.textMid)),
+                        ]),
+                    ])),
+              ]),
+            ]);
 
       case 'preparing':
-        return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-                color: AppColors.statusPrepBg,
-                borderRadius: BorderRadius.circular(8)),
-            child: Column(children: [
-              const Row(children: [
-                Icon(Icons.cleaning_services_outlined,
-                    size: 13, color: AppColors.statusPreparing),
-                SizedBox(width: 6),
-                Text('Cleaning in progress',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.statusPreparing)),
-              ]),
-              const SizedBox(height: 6),
-              ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                      value: 0.6,
-                      backgroundColor: Colors.white,
-                      color: AppColors.statusPreparing,
-                      minHeight: 4)),
-            ]),
-          ),
-        ]);
+        return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                    color: AppColors.statusPrepBg,
+                    borderRadius: BorderRadius.circular(8)),
+                child: Column(children: [
+                  const Row(children: [
+                    Icon(Icons.cleaning_services_outlined,
+                        size: 13, color: AppColors.statusPreparing),
+                    SizedBox(width: 6),
+                    Text('Cleaning in progress',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.statusPreparing)),
+                  ]),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: const LinearProgressIndicator(
+                          value: 0.6,
+                          backgroundColor: Colors.white,
+                          color: AppColors.statusPreparing,
+                          minHeight: 4)),
+                ]),
+              ),
+            ]);
 
       default:
-        return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-                color: AppColors.statusAvailBg,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: AppColors.statusAvailable.withOpacity(0.2))),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.check_circle_outline,
-                  size: 14, color: AppColors.statusAvailable.withOpacity(0.8)),
-              const SizedBox(width: 6),
-              Text('Ready · ${widget.data['seats'] ?? 4} seats',
-                  style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.statusAvailable.withOpacity(0.9))),
-            ]),
-          ),
-        ]);
+        return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                    color: AppColors.statusAvailBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppColors.statusAvailable
+                            .withOpacity(0.2))),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          size: 14,
+                          color: AppColors.statusAvailable
+                              .withOpacity(0.8)),
+                      const SizedBox(width: 6),
+                      Text(
+                          'Ready · ${widget.data['seats'] ?? 4} seats',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.statusAvailable
+                                  .withOpacity(0.9))),
+                    ]),
+              ),
+            ]);
     }
   }
 }

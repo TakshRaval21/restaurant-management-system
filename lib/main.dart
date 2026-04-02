@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_theme.dart';
 import 'core/config/routes.dart';
@@ -104,16 +105,15 @@ class _RestaurantGateState extends State<_RestaurantGate> {
 class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
   @override
-  Widget build(BuildContext context) => const Scaffold(
-    backgroundColor: Color(0xFF0D1917),
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF0D1917),
     body: Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        CircleAvatar(radius: 30, backgroundColor: Color(0xFF2E8B80),
-            child: Icon(Icons.restaurant, color: Colors.white, size: 30)),
-        SizedBox(height: 20),
-        SizedBox(width: 24, height: 24,
-            child: CircularProgressIndicator(color: Color(0xFF2E8B80), strokeWidth: 2.5)),
-      ]),
+      child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),
     ),
   );
 }

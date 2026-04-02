@@ -3,6 +3,7 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -320,7 +321,12 @@ void _showPrivacy() {
                 child: ElevatedButton(
                   onPressed: (_loading || _googleLoading || _appleLoading) ? null : _signUp,
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E8B80), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), disabledBackgroundColor: const Color(0xFF2E8B80).withOpacity(0.6)),
-                  child: _loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Get Started →', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                  child: _loading ? SizedBox(width: 20, height: 20,   child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),) : const Text('Get Started →', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -335,14 +341,24 @@ void _showPrivacy() {
               Row(children: [
                 Expanded(child: OutlinedButton.icon(
                   onPressed: (_loading || _googleLoading || _appleLoading) ? null : _signInWithGoogle,
-                  icon: _googleLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Color(0xFF2E8B80), strokeWidth: 2)) : Image.asset('assets/images/google.png', height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 20)),
+                  icon: _googleLoading ? SizedBox(width: 16, height: 16, child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),) : Image.asset('assets/images/google.png', height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 20)),
                   label: const Text('Google', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF1C2B2A), side: const BorderSide(color: Color(0xFFD4E0DE)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 13)),
                 )),
                 const SizedBox(width: 10),
                 Expanded(child: ElevatedButton.icon(
                   onPressed: (_loading || _googleLoading || _appleLoading) ? null : _signInWithApple,
-                  icon: _appleLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.apple, size: 18),
+                  icon: _appleLoading ? SizedBox(width: 16, height: 16, child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),) : const Icon(Icons.apple, size: 18),
                   label: const Text('Apple', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF141F1D), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 13)),
                 )),

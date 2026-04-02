@@ -1,16 +1,23 @@
 // lib/screens/tables/table_management_screen.dart
-import 'package:admin_side/core/config/routes.dart';
 import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/app_theme.dart';
 
 class TableManagementScreen extends StatefulWidget {
-  const TableManagementScreen({super.key});
+  /// Called when a button inside this screen needs to switch
+  /// the content panel to another section.
+  /// Index 5 = Orders, Index 9 = QR Codes (matches _navItems in admin_layout).
+  final void Function(int index)? onNavigate;
+
+  const TableManagementScreen({super.key, this.onNavigate});
+
   @override
-  State<TableManagementScreen> createState() => _TableManagementScreenState();
+  State<TableManagementScreen> createState() =>
+      _TableManagementScreenState();
 }
 
 class _TableManagementScreenState extends State<TableManagementScreen>
@@ -48,7 +55,9 @@ class _TableManagementScreenState extends State<TableManagementScreen>
     super.initState();
     _tabCtrl = TabController(length: 4, vsync: this)
       ..addListener(() {
-        if (!_tabCtrl.indexIsChanging) setState(() => _tab = _tabCtrl.index);
+        if (!_tabCtrl.indexIsChanging) {
+          setState(() => _tab = _tabCtrl.index);
+        }
       });
     _init();
   }
@@ -81,7 +90,8 @@ class _TableManagementScreenState extends State<TableManagementScreen>
         .eq('restaurant_id', _restaurantId)
         .order('table_number');
     if (mounted) {
-      setState(() => _tables = List<Map<String, dynamic>>.from(data));
+      setState(
+          () => _tables = List<Map<String, dynamic>>.from(data));
     }
   }
 
@@ -102,79 +112,86 @@ class _TableManagementScreenState extends State<TableManagementScreen>
         .subscribe();
   }
 
-  Future<void> _selectTime(BuildContext context, TextEditingController controller) async {
-  final TimeOfDay? picked = await showTimePicker(
-    context: context,
-    initialTime: TimeOfDay.now(),
-    builder: (context, child) {
-      return Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF006769), // Your Emerald Teal
-            onPrimary: Colors.white,
-            onSurface: AppColors.textDark,
+  Future<void> _selectTime(
+      BuildContext context, TextEditingController controller) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF006769),
+              onPrimary: Colors.white,
+              onSurface: AppColors.textDark,
+            ),
           ),
-        ),
-        child: child!,
-      );
-    },
-  );
-
-  if (picked != null) {
-    // Format the time to a 24-hour or 12-hour string for the controller
-    if (mounted) {
-      final formattedTime = picked.format(context); // e.g., "7:30 PM"
-      controller.text = formattedTime;
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && mounted) {
+      controller.text = picked.format(context);
     }
   }
-}
 
   @override
   void dispose() {
     _channel?.unsubscribe();
-      _channel = null;
+    _channel = null;
     _tabCtrl.dispose();
     super.dispose();
   }
 
   @override
-Widget build(BuildContext context) {
-  final isMobile = Responsive.isMobile(context);
-  final pad = Responsive.padding(context);
-  // ← No AdminLayout wrapper, return content directly
-  return _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
-          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // ── Header ────────────────────────────────────
+  Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final pad = Responsive.padding(context);
+    return _loading
+        ? Center(
+              child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header ──────────────────────────────────
               Padding(
-                padding: EdgeInsets.fromLTRB(pad.left, 20, pad.right, 0),
+                padding:
+                    EdgeInsets.fromLTRB(pad.left, 20, pad.right, 0),
                 child: isMobile
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                            Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text('Tables', style: AppText.h1),
-                                        Text(
-                                            '${_tables.length} tables on floor',
-                                            style: AppText.body),
-                                      ]),
-                                  _AddTableButton(
-                                      small: true, onTap: _showAddDialog),
-                                ]),
-                          ])
+                          Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Tables',
+                                          style: AppText.h1),
+                                      Text(
+                                          '${_tables.length} tables on floor',
+                                          style: AppText.body),
+                                    ]),
+                                _AddTableButton(
+                                    small: true,
+                                    onTap: _showAddDialog),
+                              ]),
+                        ])
                     : Row(children: [
                         Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
-                              const Text('Table Management', style: AppText.h1),
+                              const Text('Table Management',
+                                  style: AppText.h1),
                               Text(
                                   'Real-time floor layout · ${_tables.length} tables',
                                   style: AppText.body),
@@ -184,27 +201,34 @@ Widget build(BuildContext context) {
                       ]),
               ),
 
-              // ── Stats row ─────────────────────────────────
+              // ── Stats row ────────────────────────────────
               Padding(
-                padding: EdgeInsets.fromLTRB(pad.left, 14, pad.right, 0),
-                child: Wrap(spacing: 8, runSpacing: 8, children: [
-                  _StatChip('${_tables.length}', 'Total', AppColors.primary,
+                padding:
+                    EdgeInsets.fromLTRB(pad.left, 14, pad.right, 0),
+                child:
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                  _StatChip('${_tables.length}', 'Total',
+                      AppColors.primary,
                       AppColors.primary.withOpacity(0.09)),
                   _StatChip('$_availableCount', 'Available',
-                      AppColors.statusAvailable, AppColors.statusAvailBg),
+                      AppColors.statusAvailable,
+                      AppColors.statusAvailBg),
                   _StatChip('$_occupiedCount', 'Occupied',
-                      AppColors.statusOccupied, AppColors.statusOccupBg),
+                      AppColors.statusOccupied,
+                      AppColors.statusOccupBg),
                   _StatChip('$_reservedCount', 'Reserved',
-                      AppColors.statusReserved, AppColors.statusResBg),
+                      AppColors.statusReserved,
+                      AppColors.statusResBg),
                 ]),
               ),
 
-              // ── Tab bar ───────────────────────────────────
+              // ── Tab bar ──────────────────────────────────
               Container(
                 margin: const EdgeInsets.only(top: 14),
                 decoration: const BoxDecoration(
-                    border:
-                        Border(bottom: BorderSide(color: AppColors.divider))),
+                    border: Border(
+                        bottom:
+                            BorderSide(color: AppColors.divider))),
                 child: TabBar(
                   controller: _tabCtrl,
                   isScrollable: true,
@@ -216,10 +240,11 @@ Widget build(BuildContext context) {
                   unselectedLabelStyle: const TextStyle(
                       fontWeight: FontWeight.w500, fontSize: 13),
                   indicator: const UnderlineTabIndicator(
-                      borderSide:
-                          BorderSide(width: 2.5, color: AppColors.primary)),
+                      borderSide: BorderSide(
+                          width: 2.5, color: AppColors.primary)),
                   indicatorSize: TabBarIndicatorSize.tab,
-                  padding: EdgeInsets.symmetric(horizontal: pad.left),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: pad.left),
                   tabs: [
                     Tab(text: 'All (${_tables.length})'),
                     Tab(text: 'Available ($_availableCount)'),
@@ -229,11 +254,13 @@ Widget build(BuildContext context) {
                 ),
               ),
 
-              // ── Grid ──────────────────────────────────────
+              // ── Grid ────────────────────────────────────
               Expanded(
                 child: GridView.builder(
-                  padding: EdgeInsets.fromLTRB(pad.left, 16, pad.right, 24),
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  padding: EdgeInsets.fromLTRB(
+                      pad.left, 16, pad.right, 24),
+                  gridDelegate:
+                      SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: isMobile ? 180 : 260,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
@@ -248,7 +275,8 @@ Widget build(BuildContext context) {
                     return _TableCard(
                       data: t,
                       onEdit: () => _showEditDialog(t),
-                      onDelete: () => _confirmDelete(t['id'] as String),
+                      onDelete: () =>
+                          _confirmDelete(t['id'] as String),
                       onViewOrder: () => _showOrderDialog(t),
                       onQrCode: () => _showQrDialog(t),
                       onStatusChange: (s) =>
@@ -257,17 +285,22 @@ Widget build(BuildContext context) {
                   },
                 ),
               ),
-          ]
-    );
+            ]);
   }
 
-  // ── Add Table Dialog ──────────────────────────────────────
+  // ── Add Table Dialog ────────────────────────────────────
   void _showAddDialog() {
     final numCtrl = TextEditingController();
     final seatsCtrl = TextEditingController(text: '4');
     String section = 'Main Hall';
     final formKey = GlobalKey<FormState>();
-    const sections = ['Main Hall', 'Outdoor', 'VIP', 'Bar', 'Terrace'];
+    const sections = [
+      'Main Hall',
+      'Outdoor',
+      'VIP',
+      'Bar',
+      'Terrace'
+    ];
 
     showDialog(
         context: context,
@@ -280,200 +313,260 @@ Widget build(BuildContext context) {
                     decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20)),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      // Header
-                      Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.05),
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(20)),
-                          border: const Border(
-                              bottom: BorderSide(color: AppColors.divider)),
-                        ),
-                        child: Row(children: [
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Header
                           Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.table_restaurant_outlined,
-                                  color: Colors.white, size: 20)),
-                          const SizedBox(width: 12),
-                          const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Add New Table',
-                                    style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.textDark)),
-                                Text('Configure table details',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textMid)),
-                              ]),
-                          const Spacer(),
-                          GestureDetector(
-                              onTap: () => Navigator.pop(ctx),
-                              child: Container(
-                                  width: 30,
-                                  height: 30,
+                            padding: const EdgeInsets.all(22),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary
+                                  .withOpacity(0.05),
+                              borderRadius:
+                                  const BorderRadius.vertical(
+                                      top: Radius.circular(20)),
+                              border: const Border(
+                                  bottom: BorderSide(
+                                      color: AppColors.divider)),
+                            ),
+                            child: Row(children: [
+                              Container(
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
-                                      color: AppColors.contentBg,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border:
-                                          Border.all(color: AppColors.border)),
-                                  child: const Icon(Icons.close,
-                                      size: 15, color: AppColors.textMid))),
+                                      color: AppColors.primary,
+                                      borderRadius:
+                                          BorderRadius.circular(
+                                              10)),
+                                  child: const Icon(
+                                      Icons
+                                          .table_restaurant_outlined,
+                                      color: Colors.white,
+                                      size: 20)),
+                              const SizedBox(width: 12),
+                              const Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Add New Table',
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight:
+                                                FontWeight.w800,
+                                            color:
+                                                AppColors.textDark)),
+                                    Text('Configure table details',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                AppColors.textMid)),
+                                  ]),
+                              const Spacer(),
+                              GestureDetector(
+                                  onTap: () => Navigator.pop(ctx),
+                                  child: Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                          color:
+                                              AppColors.contentBg,
+                                          borderRadius:
+                                              BorderRadius.circular(
+                                                  8),
+                                          border: Border.all(
+                                              color:
+                                                  AppColors.border)),
+                                      child: const Icon(Icons.close,
+                                          size: 15,
+                                          color:
+                                              AppColors.textMid))),
+                            ]),
+                          ),
+
+                          // Body
+                          Padding(
+                            padding: const EdgeInsets.all(22),
+                            child: Form(
+                                key: formKey,
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _ThemedLabel(
+                                          'Table Number'),
+                                      const SizedBox(height: 6),
+                                      TextFormField(
+                                        controller: numCtrl,
+                                        keyboardType:
+                                            TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly
+                                        ],
+                                        validator: (v) => v!.isEmpty
+                                            ? 'Required'
+                                            : null,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textDark,
+                                            fontWeight:
+                                                FontWeight.w600),
+                                        decoration: _themedDeco(
+                                            'e.g. 12',
+                                            Icons.tag_outlined),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const _ThemedLabel(
+                                          'Number of Seats'),
+                                      const SizedBox(height: 6),
+                                      TextFormField(
+                                        controller: seatsCtrl,
+                                        keyboardType:
+                                            TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly
+                                        ],
+                                        validator: (v) => v!.isEmpty
+                                            ? 'Required'
+                                            : null,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textDark,
+                                            fontWeight:
+                                                FontWeight.w600),
+                                        decoration: _themedDeco(
+                                            'e.g. 4',
+                                            Icons.people_alt_outlined),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const _ThemedLabel('Section'),
+                                      const SizedBox(height: 6),
+                                      DropdownButtonFormField<
+                                          String>(
+                                        initialValue: section,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textDark,
+                                            fontWeight:
+                                                FontWeight.w600),
+                                        decoration: _themedDeco('',
+                                            Icons.grid_view_outlined),
+                                        items: sections
+                                            .map((s) =>
+                                                DropdownMenuItem(
+                                                    value: s,
+                                                    child: Text(s)))
+                                            .toList(),
+                                        onChanged: (v) => setDlg(
+                                            () => section =
+                                                v ?? section),
+                                      ),
+                                    ])),
+                          ),
+
+                          // Footer
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(
+                                22, 0, 22, 22),
+                            child: Row(children: [
+                              Expanded(
+                                  child: OutlinedButton(
+                                onPressed: () =>
+                                    Navigator.pop(ctx),
+                                style: OutlinedButton.styleFrom(
+                                    foregroundColor:
+                                        AppColors.textMid,
+                                    side: const BorderSide(
+                                        color: AppColors.border),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                                10)),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            vertical: 13)),
+                                child: const Text('Cancel',
+                                    style: TextStyle(
+                                        fontWeight:
+                                            FontWeight.w600)),
+                              )),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                  child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                                10)),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            vertical: 13)),
+                                onPressed: () async {
+                                  if (!formKey.currentState!
+                                      .validate()) return;
+                                  final number =
+                                      int.parse(numCtrl.text);
+                                  final existing = await _sb
+                                      .from('tables')
+                                      .select('id')
+                                      .eq('restaurant_id',
+                                          _restaurantId)
+                                      .eq('table_number', number);
+                                  if (existing.isNotEmpty) {
+                                    _snack(
+                                        'Table $number already exists',
+                                        isError: true);
+                                    return;
+                                  }
+                                  final row = await _sb
+                                      .from('tables')
+                                      .insert({
+                                        'restaurant_id':
+                                            _restaurantId,
+                                        'table_number': number,
+                                        'seats': int.parse(
+                                            seatsCtrl.text),
+                                        'section': section,
+                                        'status': 'available',
+                                      })
+                                      .select()
+                                      .single();
+                                  setState(
+                                      () => _tables.add(row));
+                                  if (mounted) Navigator.pop(ctx);
+                                  _snack('Table $number added!');
+                                },
+                                child: const Text('Add Table',
+                                    style: TextStyle(
+                                        fontWeight:
+                                            FontWeight.w700)),
+                              )),
+                            ]),
+                          ),
                         ]),
-                      ),
-
-                      // Body
-                      Padding(
-                        padding: const EdgeInsets.all(22),
-                        child: Form(
-                            key: formKey,
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Table Number
-                                  const _ThemedLabel('Table Number'),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: numCtrl,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly
-                                    ],
-                                    validator: (v) =>
-                                        v!.isEmpty ? 'Required' : null,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textDark,
-                                        fontWeight: FontWeight.w600),
-                                    decoration: _themedDeco(
-                                        'e.g. 12', Icons.tag_outlined),
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Seats
-                                  const _ThemedLabel('Number of Seats'),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: seatsCtrl,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly
-                                    ],
-                                    validator: (v) =>
-                                        v!.isEmpty ? 'Required' : null,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textDark,
-                                        fontWeight: FontWeight.w600),
-                                    decoration: _themedDeco(
-                                        'e.g. 4', Icons.people_alt_outlined),
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Section
-                                  const _ThemedLabel('Section'),
-                                  const SizedBox(height: 6),
-                                  DropdownButtonFormField<String>(
-                                    initialValue: section,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textDark,
-                                        fontWeight: FontWeight.w600),
-                                    decoration: _themedDeco(
-                                        '', Icons.grid_view_outlined),
-                                    items: sections
-                                        .map((s) => DropdownMenuItem(
-                                            value: s, child: Text(s)))
-                                        .toList(),
-                                    onChanged: (v) =>
-                                        setDlg(() => section = v ?? section),
-                                  ),
-                                ])),
-                      ),
-
-                      // Footer buttons
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(22, 0, 22, 22),
-                        child: Row(children: [
-                          Expanded(
-                              child: OutlinedButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textMid,
-                                side: const BorderSide(color: AppColors.border),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13)),
-                            child: const Text('Cancel',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                          )),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13)),
-                            onPressed: () async {
-                              if (!formKey.currentState!.validate()) return;
-                              final number = int.parse(numCtrl.text);
-                              final existing = await _sb
-                                  .from('tables')
-                                  .select('id')
-                                  .eq('restaurant_id', _restaurantId)
-                                  .eq('table_number', number);
-                              if (existing.isNotEmpty) {
-                                _snack('Table $number already exists',
-                                    isError: true);
-                                return;
-                              }
-                              final row = await _sb
-                                  .from('tables')
-                                  .insert({
-                                    'restaurant_id': _restaurantId,
-                                    'table_number': number,
-                                    'seats': int.parse(seatsCtrl.text),
-                                    'section': section,
-                                    'status': 'available',
-                                  })
-                                  .select()
-                                  .single();
-                              setState(() => _tables.add(row));
-                              if (mounted) Navigator.pop(ctx);
-                              _snack('Table $number added!');
-                            },
-                            child: const Text('Add Table',
-                                style: TextStyle(fontWeight: FontWeight.w700)),
-                          )),
-                        ]),
-                      ),
-                    ]),
                   ),
                 )));
   }
 
-  // ── Edit Dialog ───────────────────────────────────────────
+  // ── Edit Dialog ─────────────────────────────────────────
   void _showEditDialog(Map<String, dynamic> t) {
-    final seatsCtrl = TextEditingController(text: t['seats'].toString());
-    final durationCtrl = TextEditingController(text: t['duration_text'] ?? '');
-    final totalCtrl =
-        TextEditingController(text: t['current_total']?.toString() ?? '');
-    final guestCtrl = TextEditingController(text: t['guest_name'] ?? '');
-    final timeCtrl = TextEditingController(text: t['reservation_time'] ?? '');
-    final phoneCtrl = TextEditingController(text: t['guest_phone'] ?? '');
+    final seatsCtrl =
+        TextEditingController(text: t['seats'].toString());
+    final durationCtrl =
+        TextEditingController(text: t['duration_text'] ?? '');
+    final totalCtrl = TextEditingController(
+        text: t['current_total']?.toString() ?? '');
+    final guestCtrl =
+        TextEditingController(text: t['guest_name'] ?? '');
+    final timeCtrl =
+        TextEditingController(text: t['reservation_time'] ?? '');
+    final phoneCtrl =
+        TextEditingController(text: t['guest_phone'] ?? '');
     String status = t['status'] as String;
 
     showDialog(
@@ -487,296 +580,378 @@ Widget build(BuildContext context) {
                     decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20)),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      // Header
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.05),
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(20)),
-                          border: const Border(
-                              bottom: BorderSide(color: AppColors.divider)),
-                        ),
-                        child: Row(children: [
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Header
                           Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.edit_outlined,
-                                  color: AppColors.primary, size: 19)),
-                          const SizedBox(width: 12),
-                          Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Edit Table ${t['table_number']}',
-                                    style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.textDark)),
-                                Text(
-                                    '${t['section'] ?? 'Main Hall'} · ${t['seats']} seats',
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textMid)),
-                              ]),
-                          const Spacer(),
-                          GestureDetector(
-                              onTap: () => Navigator.pop(ctx),
-                              child: Container(
-                                  width: 30,
-                                  height: 30,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary
+                                  .withOpacity(0.05),
+                              borderRadius:
+                                  const BorderRadius.vertical(
+                                      top: Radius.circular(20)),
+                              border: const Border(
+                                  bottom: BorderSide(
+                                      color: AppColors.divider)),
+                            ),
+                            child: Row(children: [
+                              Container(
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
-                                      color: AppColors.contentBg,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border:
-                                          Border.all(color: AppColors.border)),
-                                  child: const Icon(Icons.close,
-                                      size: 15, color: AppColors.textMid))),
-                        ]),
-                      ),
-
-                      // Body
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: SingleChildScrollView(
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                              // Seats
-                              const _ThemedLabel('Seats'),
-                              const SizedBox(height: 6),
-                              TextFormField(
-                                  controller: seatsCtrl,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ],
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.textDark,
-                                      fontWeight: FontWeight.w600),
-                                  decoration: _themedDeco('Number of seats',
-                                      Icons.people_alt_outlined)),
-                              const SizedBox(height: 18),
-
-                              // Status selector
-                              const _ThemedLabel('Table Status'),
-                              const SizedBox(height: 10),
-                              Row(
+                                      color: AppColors.primary
+                                          .withOpacity(0.12),
+                                      borderRadius:
+                                          BorderRadius.circular(
+                                              10)),
+                                  child: const Icon(
+                                      Icons.edit_outlined,
+                                      color: AppColors.primary,
+                                      size: 19)),
+                              const SizedBox(width: 12),
+                              Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                'available',
-                                'occupied',
-                                'reserved'
-                              ].map((s) {
-                                final (color, bg) = switch (s) {
-                                  'occupied' => (
-                                      AppColors.statusOccupied,
-                                      AppColors.statusOccupBg
-                                    ),
-                                  'reserved' => (
-                                      AppColors.statusReserved,
-                                      AppColors.statusResBg
-                                    ),
-                                  _ => (
-                                      AppColors.statusAvailable,
-                                      AppColors.statusAvailBg
-                                    ),
-                                };
-                                final isSelected = status == s;
-                                return Expanded(
-                                    child: Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: GestureDetector(
-                                    onTap: () => setDlg(() => status = s),
-                                    child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 150),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 10),
+                                    Text(
+                                        'Edit Table ${t['table_number']}',
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight:
+                                                FontWeight.w800,
+                                            color:
+                                                AppColors.textDark)),
+                                    Text(
+                                        '${t['section'] ?? 'Main Hall'} · ${t['seats']} seats',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                AppColors.textMid)),
+                                  ]),
+                              const Spacer(),
+                              GestureDetector(
+                                  onTap: () => Navigator.pop(ctx),
+                                  child: Container(
+                                      width: 30,
+                                      height: 30,
                                       decoration: BoxDecoration(
-                                        color: isSelected ? color : bg,
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
+                                          color:
+                                              AppColors.contentBg,
+                                          borderRadius:
+                                              BorderRadius.circular(
+                                                  8),
+                                          border: Border.all(
+                                              color:
+                                                  AppColors.border)),
+                                      child: const Icon(Icons.close,
+                                          size: 15,
+                                          color:
+                                              AppColors.textMid))),
+                            ]),
+                          ),
+
+                          // Body
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: SingleChildScrollView(
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                  const _ThemedLabel('Seats'),
+                                  const SizedBox(height: 6),
+                                  TextFormField(
+                                      controller: seatsCtrl,
+                                      keyboardType:
+                                          TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter
+                                            .digitsOnly
+                                      ],
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textDark,
+                                          fontWeight:
+                                              FontWeight.w600),
+                                      decoration: _themedDeco(
+                                          'Number of seats',
+                                          Icons.people_alt_outlined)),
+                                  const SizedBox(height: 18),
+
+                                  const _ThemedLabel('Table Status'),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                      children: [
+                                    'available',
+                                    'occupied',
+                                    'reserved'
+                                  ].map((s) {
+                                    final (color, bg) = switch (s) {
+                                      'occupied' => (
+                                          AppColors.statusOccupied,
+                                          AppColors.statusOccupBg
+                                        ),
+                                      'reserved' => (
+                                          AppColors.statusReserved,
+                                          AppColors.statusResBg
+                                        ),
+                                      _ => (
+                                          AppColors.statusAvailable,
+                                          AppColors.statusAvailBg
+                                        ),
+                                    };
+                                    final isSelected = status == s;
+                                    return Expanded(
+                                        child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8),
+                                      child: GestureDetector(
+                                        onTap: () => setDlg(
+                                            () => status = s),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                              milliseconds: 150),
+                                          padding: const EdgeInsets
+                                              .symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
                                             color: isSelected
                                                 ? color
-                                                : color.withOpacity(0.3),
-                                            width: isSelected ? 2 : 1),
-                                      ),
-                                      child: Column(children: [
-                                        Icon(_statusIcon(s),
-                                            size: 18,
-                                            color: isSelected
-                                                ? Colors.white
-                                                : color),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                            s[0].toUpperCase() + s.substring(1),
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
+                                                : bg,
+                                            borderRadius:
+                                                BorderRadius.circular(
+                                                    10),
+                                            border: Border.all(
+                                                color: isSelected
+                                                    ? color
+                                                    : color.withOpacity(
+                                                        0.3),
+                                                width:
+                                                    isSelected ? 2 : 1),
+                                          ),
+                                          child: Column(children: [
+                                            Icon(_statusIcon(s),
+                                                size: 18,
                                                 color: isSelected
                                                     ? Colors.white
-                                                    : color)),
-                                      ]),
-                                    ),
-                                  ),
-                                ));
-                              }).toList()),
+                                                    : color),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                                s[0].toUpperCase() +
+                                                    s.substring(1),
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight:
+                                                        FontWeight.w700,
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : color)),
+                                          ]),
+                                        ),
+                                      ),
+                                    ));
+                                  }).toList()),
 
-                              // Occupied extras
-                              if (status == 'occupied') ...[
-                                const SizedBox(height: 18),
-                                const _ThemedLabel('Duration'),
-                                const SizedBox(height: 6),
-                                TextFormField(
-                                    controller: durationCtrl,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textDark),
-                                    decoration: _themedDeco(
-                                        'e.g. 45 mins', Icons.timer_outlined)),
-                                const SizedBox(height: 12),
-                                const _ThemedLabel('Current Total (\$)'),
-                                const SizedBox(height: 6),
-                                TextFormField(
-                                    controller: totalCtrl,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
+                                  if (status == 'occupied') ...[
+                                    const SizedBox(height: 18),
+                                    const _ThemedLabel('Duration'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                        controller: durationCtrl,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textDark),
+                                        decoration: _themedDeco(
+                                            'e.g. 45 mins',
+                                            Icons.timer_outlined)),
+                                    const SizedBox(height: 12),
+                                    const _ThemedLabel(
+                                        'Current Total (\$)'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                        controller: totalCtrl,
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(
                                             decimal: true),
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textDark),
-                                    decoration: _themedDeco(
-                                        '0.00', Icons.attach_money_outlined)),
-                              ],
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textDark),
+                                        decoration: _themedDeco(
+                                            '0.00',
+                                            Icons.attach_money_outlined)),
+                                  ],
 
-                              // Reserved extras
-                              if (status == 'reserved') ...[
-  const SizedBox(height: 18),
-  const _ThemedLabel('Guest Name'),
-  const SizedBox(height: 6),
-  TextFormField(
-    controller: guestCtrl,
-    style: const TextStyle(fontSize: 14, color: AppColors.textDark),
-    decoration: _themedDeco('Full name', Icons.person_outline),
-  ),
-  const SizedBox(height: 12),
-  Row(children: [
-    Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _ThemedLabel('Reservation Time'),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: timeCtrl,
-            readOnly: true, // Prevents keyboard from opening
-            onTap: () => _selectTime(context, timeCtrl), // Opens the dialog
-            style: const TextStyle(fontSize: 14, color: AppColors.textDark),
-            decoration: _themedDeco(
-              'Select Time', 
-              Icons.calendar_today_outlined // Changed icon to suggest a picker
-            ))])),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                      child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                        const _ThemedLabel('Phone'),
-                                        const SizedBox(height: 6),
-                                        TextFormField(
-                                            controller: phoneCtrl,
-                                            keyboardType: TextInputType.phone,
-                                            style: const TextStyle(
-                                                fontSize: 14,
-                                                color: AppColors.textDark),
-                                            decoration: _themedDeco(
-                                                '+1 555 0000',
-                                                Icons.phone_outlined)),
-                                      ])),
-                                ]),
-                              ],
-                            ])),
-                      ),
+                                  if (status == 'reserved') ...[
+                                    const SizedBox(height: 18),
+                                    const _ThemedLabel('Guest Name'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                      controller: guestCtrl,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textDark),
+                                      decoration: _themedDeco(
+                                          'Full name',
+                                          Icons.person_outline),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(children: [
+                                      Expanded(
+                                          child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment
+                                                      .start,
+                                              children: [
+                                            const _ThemedLabel(
+                                                'Reservation Time'),
+                                            const SizedBox(height: 6),
+                                            TextFormField(
+                                              controller: timeCtrl,
+                                              readOnly: true,
+                                              onTap: () => _selectTime(
+                                                  context, timeCtrl),
+                                              style: const TextStyle(
+                                                  fontSize: 14,
+                                                  color:
+                                                      AppColors.textDark),
+                                              decoration: _themedDeco(
+                                                  'Select Time',
+                                                  Icons
+                                                      .calendar_today_outlined),
+                                            ),
+                                          ])),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                          child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment
+                                                      .start,
+                                              children: [
+                                            const _ThemedLabel('Phone'),
+                                            const SizedBox(height: 6),
+                                            TextFormField(
+                                                controller: phoneCtrl,
+                                                keyboardType:
+                                                    TextInputType.phone,
+                                                style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color:
+                                                        AppColors.textDark),
+                                                decoration: _themedDeco(
+                                                    '+1 555 0000',
+                                                    Icons.phone_outlined)),
+                                          ])),
+                                    ]),
+                                  ],
+                                ])),
+                          ),
 
-                      // Footer
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                        child: Row(children: [
-                          Expanded(
-                              child: OutlinedButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textMid,
-                                side: const BorderSide(color: AppColors.border),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13)),
-                            child: const Text('Cancel',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                          )),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13)),
-                            onPressed: () async {
-                              final initials = _initials(guestCtrl.text);
-                              final colorHex = _randomColorHex(guestCtrl.text);
-                              final payload = {
-                                'seats': int.tryParse(seatsCtrl.text) ?? 4,
-                                'status': status,
-                                'duration_text': status == 'occupied'
-                                    ? durationCtrl.text
-                                    : null,
-                                'current_total': status == 'occupied'
-                                    ? double.tryParse(totalCtrl.text)
-                                    : null,
-                                'guest_name': status == 'reserved'
-                                    ? guestCtrl.text
-                                    : null,
-                                'reservation_time':
-                                    status == 'reserved' ? timeCtrl.text : null,
-                                'guest_phone': status == 'reserved'
-                                    ? phoneCtrl.text
-                                    : null,
-                                'avatar_initials':
-                                    status == 'reserved' ? initials : null,
-                                'avatar_color_hex':
-                                    status == 'reserved' ? colorHex : null,
-                              };
-                              await _sb
-                                  .from('tables')
-                                  .update(payload)
-                                  .eq('id', t['id']);
-                              final idx =
-                                  _tables.indexWhere((e) => e['id'] == t['id']);
-                              if (idx != -1) {
-                                setState(() => _tables[idx] = {
-                                      ..._tables[idx],
-                                      ...payload
-                                    });
-                              }
-                              if (mounted) Navigator.pop(ctx);
-                              _snack('Table updated!');
-                            },
-                            child: const Text('Save Changes',
-                                style: TextStyle(fontWeight: FontWeight.w700)),
-                          )),
+                          // Footer
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(
+                                20, 0, 20, 20),
+                            child: Row(children: [
+                              Expanded(
+                                  child: OutlinedButton(
+                                onPressed: () =>
+                                    Navigator.pop(ctx),
+                                style: OutlinedButton.styleFrom(
+                                    foregroundColor:
+                                        AppColors.textMid,
+                                    side: const BorderSide(
+                                        color: AppColors.border),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                                10)),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            vertical: 13)),
+                                child: const Text('Cancel',
+                                    style: TextStyle(
+                                        fontWeight:
+                                            FontWeight.w600)),
+                              )),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                  child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                                10)),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            vertical: 13)),
+                                onPressed: () async {
+                                  final initials =
+                                      _initials(guestCtrl.text);
+                                  final colorHex = _randomColorHex(
+                                      guestCtrl.text);
+                                  final payload = {
+                                    'seats': int.tryParse(
+                                            seatsCtrl.text) ??
+                                        4,
+                                    'status': status,
+                                    'duration_text':
+                                        status == 'occupied'
+                                            ? durationCtrl.text
+                                            : null,
+                                    'current_total':
+                                        status == 'occupied'
+                                            ? double.tryParse(
+                                                totalCtrl.text)
+                                            : null,
+                                    'guest_name':
+                                        status == 'reserved'
+                                            ? guestCtrl.text
+                                            : null,
+                                    'reservation_time':
+                                        status == 'reserved'
+                                            ? timeCtrl.text
+                                            : null,
+                                    'guest_phone':
+                                        status == 'reserved'
+                                            ? phoneCtrl.text
+                                            : null,
+                                    'avatar_initials':
+                                        status == 'reserved'
+                                            ? initials
+                                            : null,
+                                    'avatar_color_hex':
+                                        status == 'reserved'
+                                            ? colorHex
+                                            : null,
+                                  };
+                                  await _sb
+                                      .from('tables')
+                                      .update(payload)
+                                      .eq('id', t['id']);
+                                  final idx = _tables.indexWhere(
+                                      (e) => e['id'] == t['id']);
+                                  if (idx != -1) {
+                                    setState(() =>
+                                        _tables[idx] = {
+                                          ..._tables[idx],
+                                          ...payload
+                                        });
+                                  }
+                                  if (mounted) Navigator.pop(ctx);
+                                  _snack('Table updated!');
+                                },
+                                child: const Text('Save Changes',
+                                    style: TextStyle(
+                                        fontWeight:
+                                            FontWeight.w700)),
+                              )),
+                            ]),
+                          ),
                         ]),
-                      ),
-                    ]),
                   ),
                 )));
   }
@@ -799,7 +974,8 @@ Widget build(BuildContext context) {
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18)),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child:
+                    Column(mainAxisSize: MainAxisSize.min, children: [
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: const BoxDecoration(
@@ -807,19 +983,23 @@ Widget build(BuildContext context) {
                         borderRadius: BorderRadius.vertical(
                             top: Radius.circular(18)),
                         border: Border(
-                            bottom: BorderSide(color: Color(0xFFFFE0E0)))),
+                            bottom: BorderSide(
+                                color: Color(0xFFFFE0E0)))),
                     child: Row(children: [
                       Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                              color: AppColors.red.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(10)),
+                              color:
+                                  AppColors.red.withOpacity(0.12),
+                              borderRadius:
+                                  BorderRadius.circular(10)),
                           child: const Icon(Icons.delete_outline,
                               color: AppColors.red, size: 20)),
                       const SizedBox(width: 12),
                       Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             const Text('Delete Table',
                                 style: TextStyle(
@@ -829,7 +1009,8 @@ Widget build(BuildContext context) {
                             Text(
                                 'Table ${t['table_number']} · ${t['section'] ?? 'Main Hall'}',
                                 style: const TextStyle(
-                                    fontSize: 12, color: AppColors.textMid)),
+                                    fontSize: 12,
+                                    color: AppColors.textMid)),
                           ]),
                     ]),
                   ),
@@ -846,26 +1027,34 @@ Widget build(BuildContext context) {
                       Row(children: [
                         Expanded(
                             child: OutlinedButton(
-                                onPressed: () => Navigator.pop(context),
+                                onPressed: () =>
+                                    Navigator.pop(context),
                                 style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.textMid,
+                                    foregroundColor:
+                                        AppColors.textMid,
                                     side: const BorderSide(
                                         color: AppColors.border),
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
-                                            BorderRadius.circular(10)),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 13)),
+                                            BorderRadius.circular(
+                                                10)),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            vertical: 13)),
                                 child: const Text('Cancel',
                                     style: TextStyle(
-                                        fontWeight: FontWeight.w600)))),
+                                        fontWeight:
+                                            FontWeight.w600)))),
                         const SizedBox(width: 12),
                         Expanded(
                             child: ElevatedButton(
                           onPressed: () async {
-                            await _sb.from('tables').delete().eq('id', id);
-                            setState(() =>
-                                _tables.removeWhere((e) => e['id'] == id));
+                            await _sb
+                                .from('tables')
+                                .delete()
+                                .eq('id', id);
+                            setState(() => _tables
+                                .removeWhere((e) => e['id'] == id));
                             if (mounted) Navigator.pop(context);
                             _snack('Table deleted');
                           },
@@ -874,11 +1063,13 @@ Widget build(BuildContext context) {
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 13)),
+                                  borderRadius:
+                                      BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 13)),
                           child: const Text('Delete',
-                              style: TextStyle(fontWeight: FontWeight.w700)),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700)),
                         )),
                       ]),
                     ]),
@@ -888,6 +1079,9 @@ Widget build(BuildContext context) {
             ));
   }
 
+  // ── View Order Dialog ───────────────────────────────────
+  // "View Orders" button switches to Orders tab (index 5)
+  // instead of navigating away with pushReplacementNamed.
   void _showOrderDialog(Map<String, dynamic> t) {
     showDialog(
         context: context,
@@ -899,7 +1093,8 @@ Widget build(BuildContext context) {
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18)),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child:
+                    Column(mainAxisSize: MainAxisSize.min, children: [
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -907,19 +1102,24 @@ Widget build(BuildContext context) {
                         borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(18)),
                         border: const Border(
-                            bottom: BorderSide(color: AppColors.divider))),
+                            bottom:
+                                BorderSide(color: AppColors.divider))),
                     child: Row(children: [
                       Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
                               color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(Icons.receipt_long_outlined,
-                              color: Colors.white, size: 20)),
+                              borderRadius:
+                                  BorderRadius.circular(10)),
+                          child: const Icon(
+                              Icons.receipt_long_outlined,
+                              color: Colors.white,
+                              size: 20)),
                       const SizedBox(width: 12),
                       Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             Text('Table ${t['table_number']} Order',
                                 style: const TextStyle(
@@ -928,7 +1128,8 @@ Widget build(BuildContext context) {
                                     color: AppColors.textDark)),
                             Text(t['section'] ?? 'Main Hall',
                                 style: const TextStyle(
-                                    fontSize: 12, color: AppColors.textMid)),
+                                    fontSize: 12,
+                                    color: AppColors.textMid)),
                           ]),
                       const Spacer(),
                       GestureDetector(
@@ -938,10 +1139,13 @@ Widget build(BuildContext context) {
                               height: 30,
                               decoration: BoxDecoration(
                                   color: AppColors.contentBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.border)),
+                                  borderRadius:
+                                      BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: AppColors.border)),
                               child: const Icon(Icons.close,
-                                  size: 15, color: AppColors.textMid))),
+                                  size: 15,
+                                  color: AppColors.textMid))),
                     ]),
                   ),
                   Padding(
@@ -957,33 +1161,39 @@ Widget build(BuildContext context) {
                             Icons.currency_rupee_sharp,
                             'Current Total',
                             t['current_total'] != null
-                                ? '\$${t['current_total']}'
+                                ? '₹${t['current_total']}'
                                 : '—',
                             AppColors.primary),
                         const SizedBox(height: 20),
                         Row(children: [
                           Expanded(
                               child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(context),
+                                  onPressed: () =>
+                                      Navigator.pop(context),
                                   style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.textMid,
+                                      foregroundColor:
+                                          AppColors.textMid,
                                       side: const BorderSide(
                                           color: AppColors.border),
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
-                                              BorderRadius.circular(10)),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12)),
+                                              BorderRadius.circular(
+                                                  10)),
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 12)),
                                   child: const Text('Close'))),
                           const SizedBox(width: 12),
                           Expanded(
                               child: ElevatedButton.icon(
+                            // ── KEY FIX: close dialog then switch
+                            //    content panel to Orders (index 5) ──
                             onPressed: () {
                               Navigator.pop(context);
-                              Navigator.pushReplacementNamed(
-                                  context, AppRoutes.orders);
+                              widget.onNavigate?.call(5);
                             },
-                            icon: const Icon(Icons.receipt_long_outlined,
+                            icon: const Icon(
+                                Icons.receipt_long_outlined,
                                 size: 15),
                             label: const Text('View Orders'),
                             style: ElevatedButton.styleFrom(
@@ -991,9 +1201,11 @@ Widget build(BuildContext context) {
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius:
+                                        BorderRadius.circular(10)),
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 12)),
+                                    const EdgeInsets.symmetric(
+                                        vertical: 12)),
                           )),
                         ]),
                       ])),
@@ -1002,6 +1214,8 @@ Widget build(BuildContext context) {
             ));
   }
 
+  // ── QR Code Dialog ──────────────────────────────────────
+  // "Manage QRs" button switches to QR Codes tab (index 9).
   void _showQrDialog(Map<String, dynamic> t) {
     showDialog(
         context: context,
@@ -1013,7 +1227,8 @@ Widget build(BuildContext context) {
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18)),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child:
+                    Column(mainAxisSize: MainAxisSize.min, children: [
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -1021,28 +1236,35 @@ Widget build(BuildContext context) {
                         borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(18)),
                         border: const Border(
-                            bottom: BorderSide(color: AppColors.divider))),
+                            bottom:
+                                BorderSide(color: AppColors.divider))),
                     child: Row(children: [
                       Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
                               color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(Icons.qr_code_2_outlined,
-                              color: Colors.white, size: 20)),
+                              borderRadius:
+                                  BorderRadius.circular(10)),
+                          child: const Icon(
+                              Icons.qr_code_2_outlined,
+                              color: Colors.white,
+                              size: 20)),
                       const SizedBox(width: 12),
                       Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
-                            Text('QR Code — Table ${t['table_number']}',
+                            Text(
+                                'QR Code — Table ${t['table_number']}',
                                 style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.textDark)),
                             Text(t['section'] ?? 'Main Hall',
                                 style: const TextStyle(
-                                    fontSize: 12, color: AppColors.textMid)),
+                                    fontSize: 12,
+                                    color: AppColors.textMid)),
                           ]),
                       const Spacer(),
                       GestureDetector(
@@ -1052,10 +1274,13 @@ Widget build(BuildContext context) {
                               height: 30,
                               decoration: BoxDecoration(
                                   color: AppColors.contentBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.border)),
+                                  borderRadius:
+                                      BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: AppColors.border)),
                               child: const Icon(Icons.close,
-                                  size: 15, color: AppColors.textMid))),
+                                  size: 15,
+                                  color: AppColors.textMid))),
                     ]),
                   ),
                   Padding(
@@ -1066,18 +1291,22 @@ Widget build(BuildContext context) {
                           height: 170,
                           decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius:
+                                  BorderRadius.circular(16),
                               border: Border.all(
-                                  color: AppColors.primary, width: 3),
+                                  color: AppColors.primary,
+                                  width: 3),
                               boxShadow: [
                                 BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color: AppColors.primary
+                                        .withOpacity(0.1),
                                     blurRadius: 16,
                                     offset: const Offset(0, 4))
                               ]),
                           child: const Center(
                               child: Icon(Icons.qr_code_2,
-                                  size: 130, color: AppColors.textDark)),
+                                  size: 130,
+                                  color: AppColors.textDark)),
                         ),
                         const SizedBox(height: 14),
                         Text(
@@ -1089,14 +1318,16 @@ Widget build(BuildContext context) {
                         const SizedBox(height: 4),
                         const Text('Scan to view menu & place order',
                             style: TextStyle(
-                                fontSize: 12, color: AppColors.textMid)),
+                                fontSize: 12,
+                                color: AppColors.textMid)),
                         const SizedBox(height: 6),
                         Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
                                 color: AppColors.contentBg,
-                                borderRadius: BorderRadius.circular(8)),
+                                borderRadius:
+                                    BorderRadius.circular(8)),
                             child: const Text(
                                 'Add qr_flutter package for real QR',
                                 style: TextStyle(
@@ -1106,35 +1337,44 @@ Widget build(BuildContext context) {
                         Row(children: [
                           Expanded(
                               child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(context),
+                                  onPressed: () =>
+                                      Navigator.pop(context),
                                   style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.textMid,
+                                      foregroundColor:
+                                          AppColors.textMid,
                                       side: const BorderSide(
                                           color: AppColors.border),
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
-                                              BorderRadius.circular(10)),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12)),
+                                              BorderRadius.circular(
+                                                  10)),
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 12)),
                                   child: const Text('Close'))),
                           const SizedBox(width: 12),
                           Expanded(
                               child: ElevatedButton.icon(
+                            // ── KEY FIX: close dialog then switch
+                            //    content panel to QR Codes (index 9) ──
                             onPressed: () {
                               Navigator.pop(context);
-                              Navigator.pushReplacementNamed(
-                                  context, AppRoutes.qrCodes);
+                              widget.onNavigate?.call(9);
                             },
-                            icon: const Icon(Icons.qr_code_outlined, size: 15),
+                            icon: const Icon(
+                                Icons.qr_code_outlined,
+                                size: 15),
                             label: const Text('Manage QRs'),
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius:
+                                        BorderRadius.circular(10)),
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 12)),
+                                    const EdgeInsets.symmetric(
+                                        vertical: 12)),
                           )),
                         ]),
                       ])),
@@ -1144,10 +1384,13 @@ Widget build(BuildContext context) {
   }
 
   Future<void> _updateStatus(String id, String status) async {
-    await _sb.from('tables').update({'status': status}).eq('id', id);
+    await _sb
+        .from('tables')
+        .update({'status': status}).eq('id', id);
     final idx = _tables.indexWhere((e) => e['id'] == id);
     if (idx != -1) {
-      setState(() => _tables[idx] = {..._tables[idx], 'status': status});
+      setState(() =>
+          _tables[idx] = {..._tables[idx], 'status': status});
     }
   }
 
@@ -1155,11 +1398,12 @@ Widget build(BuildContext context) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(msg),
-        backgroundColor: isError ? AppColors.red : AppColors.primary,
+        backgroundColor:
+            isError ? AppColors.red : AppColors.primary,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(14),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10))));
   }
 
   String _initials(String name) {
@@ -1185,28 +1429,33 @@ Widget build(BuildContext context) {
     return c[seed.hashCode.abs() % c.length];
   }
 
-  // Themed input decoration matching app theme
   static InputDecoration _themedDeco(String hint, IconData icon) =>
       InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(fontSize: 13.5, color: AppColors.textLight),
-        prefixIcon: Icon(icon, size: 18, color: AppColors.textLight),
+        hintStyle: const TextStyle(
+            fontSize: 13.5, color: AppColors.textLight),
+        prefixIcon:
+            Icon(icon, size: 18, color: AppColors.textLight),
         filled: true,
         fillColor: AppColors.contentBg,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14, vertical: 13),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.border)),
+            borderSide:
+                const BorderSide(color: AppColors.border)),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.border)),
+            borderSide:
+                const BorderSide(color: AppColors.border)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.8)),
+            borderSide: const BorderSide(
+                color: AppColors.primary, width: 1.8)),
         errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.red)),
+            borderSide:
+                const BorderSide(color: AppColors.red)),
       );
 }
 
@@ -1230,11 +1479,13 @@ class _OrderInfoRow extends StatelessWidget {
   const _OrderInfoRow(this.icon, this.label, this.value, this.color);
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
             color: color.withOpacity(0.06),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withOpacity(0.15))),
+            border:
+                Border.all(color: color.withOpacity(0.15))),
         child: Row(children: [
           Container(
               width: 32,
@@ -1245,11 +1496,14 @@ class _OrderInfoRow extends StatelessWidget {
               child: Icon(icon, size: 16, color: color)),
           const SizedBox(width: 10),
           Text(label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textMid)),
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textMid)),
           const Spacer(),
           Text(value,
               style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: color)),
         ]),
       );
 }
@@ -1265,13 +1519,15 @@ class _AddTableButton extends StatelessWidget {
         icon: Icon(Icons.add, size: small ? 15 : 17),
         label: Text(small ? 'Add Table' : 'Add New Table',
             style: TextStyle(
-                fontSize: small ? 13 : 14, fontWeight: FontWeight.w600)),
+                fontSize: small ? 13 : 14,
+                fontWeight: FontWeight.w600)),
         style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: EdgeInsets.symmetric(
-                horizontal: small ? 14 : 18, vertical: small ? 10 : 12),
+                horizontal: small ? 14 : 18,
+                vertical: small ? 10 : 12),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10))),
       );
@@ -1284,24 +1540,29 @@ class _StatChip extends StatelessWidget {
   const _StatChip(this.value, this.label, this.color, this.bg);
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration:
-            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Container(
               width: 7,
               height: 7,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              decoration: BoxDecoration(
+                  color: color, shape: BoxShape.circle)),
           const SizedBox(width: 6),
           Text('$value $label',
               style: TextStyle(
-                  color: color, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  color: color,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700)),
         ]),
       );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Table Card — redesigned
+//  Table Card
 // ─────────────────────────────────────────────────────────────
 class _TableCard extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -1320,11 +1581,13 @@ class _TableCard extends StatefulWidget {
 
 class _TableCardState extends State<_TableCard> {
   bool _hovered = false;
-  String get _status => widget.data['status'] as String? ?? 'available';
+  String get _status =>
+      widget.data['status'] as String? ?? 'available';
 
   @override
   Widget build(BuildContext context) {
-    final (badgeBg, badgeFg, badgeLabel, accentColor) = switch (_status) {
+    final (badgeBg, badgeFg, badgeLabel, accentColor) =
+        switch (_status) {
       'occupied' => (
           AppColors.statusOccupBg,
           AppColors.statusOccupied,
@@ -1354,77 +1617,90 @@ class _TableCardState extends State<_TableCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: _hovered ? accentColor.withOpacity(0.4) : AppColors.border,
+              color: _hovered
+                  ? accentColor.withOpacity(0.4)
+                  : AppColors.border,
               width: _hovered ? 1.5 : 1),
           boxShadow: [
             BoxShadow(
-                color:
-                    _hovered ? accentColor.withOpacity(0.12) : AppColors.shadow,
+                color: _hovered
+                    ? accentColor.withOpacity(0.12)
+                    : AppColors.shadow,
                 blurRadius: _hovered ? 16 : 8,
                 offset: const Offset(0, 3))
           ],
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // ── Top row: number + badge ──
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(
-                        'Table ${widget.data['table_number']?.toString().padLeft(2, '0') ?? '01'}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: AppColors.textDark)),
-                    const SizedBox(height: 2),
-                    Text((widget.data['section'] ?? 'Main Hall').toString(),
-                        style: const TextStyle(
-                            fontSize: 11.5, color: AppColors.textMid)),
-                    const SizedBox(height: 2),
-                    Row(children: [
-                      const Icon(Icons.people_alt_outlined,
-                          size: 11, color: AppColors.textLight),
-                      const SizedBox(width: 3),
-                      Text('${widget.data['seats'] ?? 4} Seats',
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.textLight)),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                            Text(
+                                'Table ${widget.data['table_number']?.toString().padLeft(2, '0') ?? '01'}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: AppColors.textDark)),
+                            const SizedBox(height: 2),
+                            Text(
+                                (widget.data['section'] ??
+                                        'Main Hall')
+                                    .toString(),
+                                style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textMid)),
+                            const SizedBox(height: 2),
+                            Row(children: [
+                              const Icon(Icons.people_alt_outlined,
+                                  size: 11,
+                                  color: AppColors.textLight),
+                              const SizedBox(width: 3),
+                              Text(
+                                  '${widget.data['seats'] ?? 4} Seats',
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textLight)),
+                            ]),
+                          ])),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius:
+                                BorderRadius.circular(20)),
+                        child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                      color: badgeFg,
+                                      shape: BoxShape.circle)),
+                              const SizedBox(width: 4),
+                              Text(badgeLabel,
+                                  style: TextStyle(
+                                      color: badgeFg,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.3)),
+                            ]),
+                      ),
                     ]),
-                  ])),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                    color: badgeBg, borderRadius: BorderRadius.circular(20)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                          color: badgeFg, shape: BoxShape.circle)),
-                  const SizedBox(width: 4),
-                  Text(badgeLabel,
-                      style: TextStyle(
-                          color: badgeFg,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3)),
-                ]),
-              ),
-            ]),
-
-            const SizedBox(height: 10),
-
-            // ── Middle content ──
-            Expanded(child: _buildMiddle(accentColor)),
-
-            const SizedBox(height: 10),
-
-            // ── Action row ──
-            _buildActions(),
-          ]),
+                const SizedBox(height: 10),
+                Expanded(child: _buildMiddle(accentColor)),
+                const SizedBox(height: 10),
+                _buildActions(),
+              ]),
         ),
       ),
     );
@@ -1440,22 +1716,26 @@ class _TableCardState extends State<_TableCard> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: const Color(0xFFFFE0B2)),
         ),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _InfoPair('Duration', widget.data['duration_text'] ?? '—',
-              AppColors.statusOccupied),
-          const SizedBox(height: 7),
-          _InfoPair(
-              'Total',
-              widget.data['current_total'] != null
-                  ? '\$${widget.data['current_total']}'
-                  : '—',
-              AppColors.textDark),
-        ]),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _InfoPair('Duration',
+                  widget.data['duration_text'] ?? '—',
+                  AppColors.statusOccupied),
+              const SizedBox(height: 7),
+              _InfoPair(
+                  'Total',
+                  widget.data['current_total'] != null
+                      ? '₹${widget.data['current_total']}'
+                      : '—',
+                  AppColors.textDark),
+            ]),
       );
     }
 
     if (_status == 'reserved') {
-      final hex = widget.data['avatar_color_hex'] as String? ?? '26A69A';
+      final hex =
+          widget.data['avatar_color_hex'] as String? ?? '26A69A';
       final avatarColor = Color(int.parse('FF$hex', radix: 16));
       return Container(
         width: double.infinity,
@@ -1473,7 +1753,8 @@ class _TableCardState extends State<_TableCard> {
                 CircleAvatar(
                     radius: 14,
                     backgroundColor: avatarColor,
-                    child: Text(widget.data['avatar_initials'] ?? '?',
+                    child: Text(
+                        widget.data['avatar_initials'] ?? '?',
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -1495,9 +1776,11 @@ class _TableCardState extends State<_TableCard> {
                       size: 11, color: AppColors.textLight),
                   const SizedBox(width: 4),
                   Expanded(
-                      child: Text(widget.data['guest_phone'] ?? '—',
+                      child: Text(
+                          widget.data['guest_phone'] ?? '—',
                           style: const TextStyle(
-                              fontSize: 10.5, color: AppColors.textMid),
+                              fontSize: 10.5,
+                              color: AppColors.textMid),
                           overflow: TextOverflow.ellipsis)),
                 ]),
               ],
@@ -1505,24 +1788,28 @@ class _TableCardState extends State<_TableCard> {
       );
     }
 
-    // Available
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.statusAvailBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.statusAvailable.withOpacity(0.25)),
+        border: Border.all(
+            color: AppColors.statusAvailable.withOpacity(0.25)),
       ),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.check_circle_outline,
-            size: 28, color: AppColors.statusAvailable.withOpacity(0.6)),
-        const SizedBox(height: 5),
-        Text('Ready to serve',
-            style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.statusAvailable.withOpacity(0.8))),
-      ]),
+      child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline,
+                size: 28,
+                color: AppColors.statusAvailable.withOpacity(0.6)),
+            const SizedBox(height: 5),
+            Text('Ready to serve',
+                style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        AppColors.statusAvailable.withOpacity(0.8))),
+          ]),
     );
   }
 
@@ -1536,10 +1823,13 @@ class _TableCardState extends State<_TableCard> {
                 onTap: widget.onViewOrder,
                 color: AppColors.primary)),
         const SizedBox(width: 6),
-        _CircleBtn(icon: Icons.edit_outlined, onTap: widget.onEdit),
+        _CircleBtn(
+            icon: Icons.edit_outlined, onTap: widget.onEdit),
         const SizedBox(width: 4),
         _CircleBtn(
-            icon: Icons.delete_outline, onTap: widget.onDelete, isDelete: true),
+            icon: Icons.delete_outline,
+            onTap: widget.onDelete,
+            isDelete: true),
       ]);
     }
     return Row(children: [
@@ -1551,10 +1841,13 @@ class _TableCardState extends State<_TableCard> {
               color: AppColors.textMid,
               outlined: true)),
       const SizedBox(width: 6),
-      _CircleBtn(icon: Icons.edit_outlined, onTap: widget.onEdit),
+      _CircleBtn(
+          icon: Icons.edit_outlined, onTap: widget.onEdit),
       const SizedBox(width: 4),
       _CircleBtn(
-          icon: Icons.delete_outline, onTap: widget.onDelete, isDelete: true),
+          icon: Icons.delete_outline,
+          onTap: widget.onDelete,
+          isDelete: true),
     ]);
   }
 }
@@ -1564,16 +1857,19 @@ class _InfoPair extends StatelessWidget {
   final Color valueColor;
   const _InfoPair(this.label, this.value, this.valueColor);
   @override
-  Widget build(BuildContext context) =>
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
-        Text(value,
-            style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                color: valueColor)),
-      ]);
+  Widget build(BuildContext context) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: AppColors.textMid)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: valueColor)),
+        ],
+      );
 }
 
 class _PrimaryBtn extends StatelessWidget {
@@ -1595,24 +1891,29 @@ class _PrimaryBtn extends StatelessWidget {
             ? OutlinedButton.icon(
                 onPressed: onTap,
                 icon: Icon(icon, size: 13),
-                label: Text(label, style: const TextStyle(fontSize: 11.5)),
+                label: Text(label,
+                    style: const TextStyle(fontSize: 11.5)),
                 style: OutlinedButton.styleFrom(
                     foregroundColor: color,
-                    side: BorderSide(color: color.withOpacity(0.4)),
+                    side:
+                        BorderSide(color: color.withOpacity(0.4)),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9))))
+                        borderRadius:
+                            BorderRadius.circular(9))))
             : ElevatedButton.icon(
                 onPressed: onTap,
                 icon: Icon(icon, size: 13),
-                label: Text(label, style: const TextStyle(fontSize: 11.5)),
+                label: Text(label,
+                    style: const TextStyle(fontSize: 11.5)),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: color,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)))),
+                        borderRadius:
+                            BorderRadius.circular(9)))),
       );
 }
 
@@ -1621,7 +1922,9 @@ class _CircleBtn extends StatelessWidget {
   final VoidCallback onTap;
   final bool isDelete;
   const _CircleBtn(
-      {required this.icon, required this.onTap, this.isDelete = false});
+      {required this.icon,
+      required this.onTap,
+      this.isDelete = false});
   @override
   Widget build(BuildContext context) => GestureDetector(
       onTap: onTap,
@@ -1638,12 +1941,14 @@ class _CircleBtn extends StatelessWidget {
                     ? AppColors.red.withOpacity(0.3)
                     : AppColors.border)),
         child: Icon(icon,
-            size: 16, color: isDelete ? AppColors.red : AppColors.textMid),
+            size: 16,
+            color:
+                isDelete ? AppColors.red : AppColors.textMid),
       ));
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Add Card — properly centered content
+//  Add Card
 // ─────────────────────────────────────────────────────────────
 class _AddCard extends StatefulWidget {
   final VoidCallback onTap;
@@ -1673,10 +1978,10 @@ class _AddCardState extends State<_AddCard> {
               borderType: BorderType.RRect,
               radius: const Radius.circular(16),
               dashPattern: const [7, 5],
-              color: _hovered ? AppColors.primary : const Color(0xFFB0C4C0),
+              color: _hovered
+                  ? AppColors.primary
+                  : const Color(0xFFB0C4C0),
               strokeWidth: 1.8,
-              // ── KEY FIX: SizedBox.expand so the dotted border fills the
-              //    grid cell, and Center perfectly places content inside ──
               child: SizedBox.expand(
                 child: Center(
                   child: Column(
@@ -1716,7 +2021,8 @@ class _AddCardState extends State<_AddCard> {
                           style: TextStyle(
                               fontSize: 11,
                               color: _hovered
-                                  ? AppColors.primary.withOpacity(0.6)
+                                  ? AppColors.primary
+                                      .withOpacity(0.6)
                                   : AppColors.textLight)),
                     ],
                   ),

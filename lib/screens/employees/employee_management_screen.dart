@@ -10,6 +10,7 @@
 
 import 'package:admin_side/layouts/admin_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/app_theme.dart';
 
@@ -429,11 +430,15 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                                     }
                                   },
                             child: sending
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 18,
                                     height: 18,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2))
+                                      child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
                                 : const Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -600,7 +605,12 @@ Widget build(BuildContext context) {
   final isMobile = Responsive.isMobile(context);
   // ← No AdminLayout wrapper
   return _loading
-      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      ? Center(  child: Lottie.asset(
+        'assets/animations/loader.json',
+        width: 200,
+        height: 200,
+        fit: BoxFit.contain,
+      ),)
       : Padding(
           padding: Responsive.padding(context),
           child: Column(

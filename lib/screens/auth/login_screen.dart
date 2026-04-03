@@ -257,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen>
                               color: Colors.white, size: 20)),
                       const SizedBox(width: 10),
                       const Text('RestoAdmin',
-                          style: TextStyle(
+                          style: TextStyle( 
                               fontWeight: FontWeight.w800,
                               fontSize: 18,
                               color: Color(0xFF141F1D))),

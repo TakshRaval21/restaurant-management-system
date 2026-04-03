@@ -112,75 +112,80 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     } catch (_) {}
   }
 
+  // ── Category Dialog with Emoji Picker ────────────────────
   void _showCategoryDialog([Map<String, dynamic>? cat]) {
     final nameCtrl = TextEditingController(text: cat?['name'] ?? '');
-    final iconCtrl = TextEditingController(text: cat?['icon'] ?? '🍽️');
     final descCtrl = TextEditingController(text: cat?['description'] ?? '');
+    String selectedEmoji = (cat?['icon'] as String?)?.isNotEmpty == true
+        ? cat!['icon'] as String
+        : '🍽️';
+
     showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Text(cat == null ? 'Add Category' : 'Edit Category',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, color: AppColors.textDark)),
-              content: Column(mainAxisSize: MainAxisSize.min, children: [
-                _dlgField(nameCtrl, 'Category Name', Icons.category_outlined),
-                const SizedBox(height: 12),
-                _dlgField(
-                    iconCtrl, 'Emoji Icon', Icons.emoji_emotions_outlined),
-                const SizedBox(height: 12),
-                _dlgField(descCtrl, 'Description (optional)',
-                    Icons.description_outlined),
-              ]),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel',
-                        style: TextStyle(color: AppColors.textMid))),
-                ElevatedButton(
-                    onPressed: () async {
-                      if (nameCtrl.text.trim().isEmpty) return;
-                      final payload = {
-                        'restaurant_id': _restaurantId,
-                        'name': nameCtrl.text.trim(),
-                        'icon': iconCtrl.text.trim().isEmpty
-                            ? '🍽️'
-                            : iconCtrl.text.trim(),
-                        'description': descCtrl.text.trim()
-                      };
-                      if (cat == null) {
-                        final row = await _sb
-                            .from('menu_categories')
-                            .insert(payload)
-                            .select()
-                            .single();
-                        setState(() {
-                          _categories.add(row);
-                          _selectedCategoryId = row['id'];
-                        });
-                      } else {
-                        await _sb
-                            .from('menu_categories')
-                            .update(payload)
-                            .eq('id', cat['id']);
-                        final idx =
-                            _categories.indexWhere((c) => c['id'] == cat['id']);
-                        if (idx != -1) {
-                          setState(() => _categories[idx] = {
-                                ..._categories[idx],
-                                ...payload
-                              });
-                        }
-                      }
-                      if (mounted) Navigator.pop(context);
-                      _snack(cat == null
-                          ? 'Category added!'
-                          : 'Category updated!');
-                    },
-                    child: const Text('Save')),
-              ],
-            ));
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            cat == null ? 'Add Category' : 'Edit Category',
+            style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.textDark),
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              // ── Emoji Picker Section ──────────────────────
+              _EmojiPickerField(
+                selectedEmoji: selectedEmoji,
+                onEmojiSelected: (emoji) => setDlg(() => selectedEmoji = emoji),
+              ),
+              const SizedBox(height: 16),
+              _dlgField(nameCtrl, 'Category Name', Icons.category_outlined),
+              const SizedBox(height: 12),
+              _dlgField(descCtrl, 'Description (optional)', Icons.description_outlined),
+            ]),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textMid)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) return;
+                final payload = {
+                  'restaurant_id': _restaurantId,
+                  'name': nameCtrl.text.trim(),
+                  'icon': selectedEmoji,
+                  'description': descCtrl.text.trim(),
+                };
+                if (cat == null) {
+                  final row = await _sb
+                      .from('menu_categories')
+                      .insert(payload)
+                      .select()
+                      .single();
+                  setState(() {
+                    _categories.add(row);
+                    _selectedCategoryId = row['id'];
+                  });
+                } else {
+                  await _sb
+                      .from('menu_categories')
+                      .update(payload)
+                      .eq('id', cat['id']);
+                  final idx = _categories.indexWhere((c) => c['id'] == cat['id']);
+                  if (idx != -1) {
+                    setState(() => _categories[idx] = {..._categories[idx], ...payload});
+                  }
+                }
+                if (mounted) Navigator.pop(context);
+                _snack(cat == null ? 'Category added!' : 'Category updated!');
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteCategory(String id) async {
@@ -411,14 +416,13 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   @override
 Widget build(BuildContext context) {
   final isMobile = Responsive.isMobile(context);
-  // ← No AdminLayout wrapper
   return _loading
-      ? Center(  child: Lottie.asset(
+      ? Center(child: Lottie.asset(
         'assets/animations/loader.json',
         width: 200,
         height: 200,
         fit: BoxFit.contain,
-      ),)
+      ))
       : Column(children: [
           _buildHeader(isMobile),
           Expanded(
@@ -673,7 +677,6 @@ Widget build(BuildContext context) {
 
   Widget _buildItemsPanel(bool isMobile) {
     final items = _filteredItems;
-    // ── Key fix: use maxCrossAxisExtent so cards never get too wide
     return Padding(
       padding: EdgeInsets.fromLTRB(isMobile ? 14 : 0, 14, 14, 14),
       child: Container(
@@ -743,14 +746,12 @@ Widget build(BuildContext context) {
                       ]))
                 : GridView.builder(
                     padding: const EdgeInsets.all(14),
-                    // ── SliverGridDelegateWithMaxCrossAxisExtent automatically
-                    //    adapts columns — no dead space at any screen size
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 220, // each card max 220px wide
+                      maxCrossAxisExtent: 220,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.72, // taller than wide → no empty gap
+                      childAspectRatio: 0.72,
                     ),
                     itemCount: items.length,
                     itemBuilder: (_, i) => _ItemCard(
@@ -831,10 +832,242 @@ Widget build(BuildContext context) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  Emoji Picker Field Widget
+// ─────────────────────────────────────────────────────────────
+class _EmojiPickerField extends StatefulWidget {
+  final String selectedEmoji;
+  final ValueChanged<String> onEmojiSelected;
+
+  const _EmojiPickerField({
+    required this.selectedEmoji,
+    required this.onEmojiSelected,
+  });
+
+  @override
+  State<_EmojiPickerField> createState() => _EmojiPickerFieldState();
+}
+
+class _EmojiPickerFieldState extends State<_EmojiPickerField> {
+  bool _open = false;
+  int _activeTab = 0;
+
+  // Emoji groups organised by restaurant-relevant categories
+  static const List<Map<String, dynamic>> _tabs = [
+    {
+      'label': '🍽️ Food',
+      'emojis': [
+        '🍽️','🥘','🍲','🥗','🍜','🍝','🍛','🍣','🍱','🍤',
+        '🍗','🍖','🥩','🥚','🍳','🥞','🧇','🥓','🌮','🌯',
+        '🥪','🥙','🍔','🍟','🌭','🍕','🥨','🥐','🍞','🥖',
+        '🥨','🧀','🥗','🥙','🫔','🫕','🧆','🥜','🍿','🧂',
+      ],
+    },
+    {
+      'label': '🍰 Desserts',
+      'emojis': [
+        '🍰','🎂','🧁','🍩','🍪','🍫','🍬','🍭','🍮','🍯',
+        '🍦','🍧','🍨','🍡','🧃','🍢','🍣','🥮','🍡','🥧',
+        '🫙','🍯','🧋','🍮','🍭','🍬','🍫','🍿','🥜','🌰',
+      ],
+    },
+    {
+      'label': '🥤 Drinks',
+      'emojis': [
+        '🥤','🧃','🧉','☕','🍵','🫖','🍺','🍻','🥂','🍷',
+        '🥃','🍸','🍹','🧊','🫗','🍶','🥛','🍼','🫖','☕',
+        '🧋','🍾','🍷','🍸','🍹','🍺','🥂','🥃','🫗','🧉',
+      ],
+    },
+    {
+      'label': '🥦 Veggies',
+      'emojis': [
+        '🥦','🥕','🌽','🥑','🍅','🍆','🧅','🧄','🥔','🌶️',
+        '🫑','🥒','🥬','🫛','🌿','🌱','🪴','🍀','🌾','🫚',
+        '🫛','🥝','🍋','🍊','🍇','🍓','🍒','🍑','🥭','🍍',
+      ],
+    },
+    {
+      'label': '🌍 Cuisine',
+      'emojis': [
+        '🇮🇳','🇮🇹','🇨🇳','🇯🇵','🇲🇽','🇺🇸','🇬🇷','🇫🇷','🇹🇭','🇰🇷',
+        '🌮','🍜','🍛','🍣','🥙','🥗','🫔','🍲','🥘','🍝',
+        '🍱','🥮','🧆','🫕','🌯','🥪','🍔','🍕','🫓','🥨',
+      ],
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        const Row(children: [
+          Icon(Icons.emoji_emotions_outlined, size: 15, color: AppColors.textMid),
+          SizedBox(width: 6),
+          Text('Category Icon',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+        ]),
+        const SizedBox(height: 8),
+
+        // Selected emoji display + tap to open
+        GestureDetector(
+          onTap: () => setState(() => _open = !_open),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7FBFA),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: _open ? AppColors.primary : AppColors.border,
+                width: _open ? 1.5 : 1,
+              ),
+            ),
+            child: Row(children: [
+              // Big emoji preview
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(widget.selectedEmoji, style: const TextStyle(fontSize: 24)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Selected Icon',
+                      style: TextStyle(fontSize: 11, color: AppColors.textLight)),
+                  const SizedBox(height: 2),
+                  Text(widget.selectedEmoji,
+                      style: const TextStyle(fontSize: 20, letterSpacing: 2)),
+                ]),
+              ),
+              AnimatedRotation(
+                turns: _open ? 0.5 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: const Icon(Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textMid, size: 20),
+              ),
+            ]),
+          ),
+        ),
+
+        // Emoji picker panel (expands below)
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 220),
+          crossFadeState: _open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          firstChild: const SizedBox.shrink(),
+          secondChild: Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(children: [
+              // Tab bar
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF5F4F0),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(_tabs.length, (i) {
+                      final active = _activeTab == i;
+                      return GestureDetector(
+                        onTap: () => setState(() => _activeTab = i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: active ? Colors.white : Colors.transparent,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                            border: active
+                                ? Border(
+                                    bottom: BorderSide(color: AppColors.primary, width: 2),
+                                  )
+                                : null,
+                          ),
+                          child: Text(
+                            _tabs[i]['label'] as String,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                              color: active ? AppColors.primary : AppColors.textMid,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
+
+              // Emoji grid
+              SizedBox(
+                height: 180,
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(10),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 8,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: (_tabs[_activeTab]['emojis'] as List).length,
+                  itemBuilder: (_, i) {
+                    final emoji = (_tabs[_activeTab]['emojis'] as List)[i] as String;
+                    final isSelected = emoji == widget.selectedEmoji;
+                    return GestureDetector(
+                      onTap: () {
+                        widget.onEmojiSelected(emoji);
+                        setState(() => _open = false);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withOpacity(0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(7),
+                          border: isSelected
+                              ? Border.all(color: AppColors.primary.withOpacity(0.5))
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 //  Photo Picker
 // ─────────────────────────────────────────────────────────────
-  class _PhotoPicker extends StatelessWidget {
-    final String? existingUrl;
+class _PhotoPicker extends StatelessWidget {
+  final String? existingUrl;
   final Uint8List? previewBytes;
   final VoidCallback onPick, onRemove;
   const _PhotoPicker(
@@ -947,7 +1180,7 @@ Widget build(BuildContext context) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Item Card — redesigned
+//  Item Card
 // ─────────────────────────────────────────────────────────────
 class _ItemCard extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -1000,7 +1233,6 @@ class _ItemCardState extends State<_ItemCard> {
           ),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // ── Food photo (fixed height, covers top of card) ──
             Stack(children: [
               ClipRRect(
                 borderRadius:
@@ -1019,7 +1251,6 @@ class _ItemCardState extends State<_ItemCard> {
                       : _noPhoto(),
                 ),
               ),
-              // Featured badge — top left
               if (featured)
                 Positioned(
                     top: 8,
@@ -1048,7 +1279,6 @@ class _ItemCardState extends State<_ItemCard> {
                                 letterSpacing: 0.2))
                       ]),
                     )),
-              // Unavailable overlay
               if (!available)
                 Positioned.fill(
                     child: ClipRRect(
@@ -1066,14 +1296,12 @@ class _ItemCardState extends State<_ItemCard> {
                 )),
             ]),
 
-            // ── Content ──────────────────────────────────────
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Name
                       Text(name,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -1083,8 +1311,6 @@ class _ItemCardState extends State<_ItemCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 3),
-
-                      // Description
                       Text(desc.isEmpty ? 'No description' : desc,
                           style: const TextStyle(
                               fontSize: 11,
@@ -1092,10 +1318,7 @@ class _ItemCardState extends State<_ItemCard> {
                               height: 1.3),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),
-
                       const Spacer(),
-
-                      // Price row
                       Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
@@ -1104,11 +1327,12 @@ class _ItemCardState extends State<_ItemCard> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                   Text(
-     RestaurantService.instance.formatPrice(priceNum),
-     style: const TextStyle(
-        fontSize: 15, fontWeight: FontWeight.w800,
-        color: AppColors.primary, letterSpacing: -0.3)),
+                                  Text(
+                                    RestaurantService.instance.formatPrice(priceNum),
+                                    style: const TextStyle(
+                                        fontSize: 15, fontWeight: FontWeight.w800,
+                                        color: AppColors.primary, letterSpacing: -0.3),
+                                  ),
                                   Row(children: [
                                     const Icon(Icons.timer_outlined,
                                         size: 10, color: AppColors.textLight),
@@ -1119,7 +1343,6 @@ class _ItemCardState extends State<_ItemCard> {
                                             color: AppColors.textLight)),
                                   ]),
                                 ])),
-                            // Action buttons
                             Row(children: [
                               _ActionBtn(
                                   icon: Icons.edit_outlined,
@@ -1132,10 +1355,7 @@ class _ItemCardState extends State<_ItemCard> {
                                   onTap: widget.onDelete),
                             ]),
                           ]),
-
                       const SizedBox(height: 8),
-
-                      // Availability toggle — full width pill
                       GestureDetector(
                         onTap: widget.onToggle,
                         child: AnimatedContainer(
@@ -1201,12 +1421,12 @@ class _ItemCardState extends State<_ItemCard> {
             child: SizedBox(
                 width: 18,
                 height: 18,
-                  child: Lottie.asset(
-        'assets/animations/loader.json',
-        width: 200,
-        height: 200,
-        fit: BoxFit.contain,
-      ),)),
+                child: Lottie.asset(
+                  'assets/animations/loader.json',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ))),
       );
 }
 

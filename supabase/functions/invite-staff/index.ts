@@ -37,9 +37,9 @@ serve(async (req) => {
 
     // Invite user — Supabase sends magic link email automatically
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: 'staffapp://login-callback',
+      redirectTo: redirect_to ?? 'staffapp://auth/callback', // ← FIXED: uses value from request body
       data: {
-        full_name,       // stored in user_metadata — staff app reads this
+        full_name,            // stored in user_metadata — staff app reads this
         role,
         restaurant_id,
         password_set: false,  // staff app shows SetPasswordScreen until true

@@ -9,13 +9,7 @@ import 'package:admin_side/core/services/restaurant_service.dart';
 import '../../core/config/app_theme.dart';
 
 class OrdersScreen extends StatefulWidget {
-  /// Called when "Generate Bill" is tapped.
-  /// Passes billing context up to the layout so it can display
-  /// BillingScreen in the content panel without Navigator.
   final void Function(int index)? onNavigate;
-
-  /// Called with billing data when Generate Bill is tapped,
-  /// so the layout can pass it into BillingScreen.
   final void Function({
     required String tableKey,
     required List<Map<String, dynamic>> tableOrders,
@@ -42,15 +36,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
   String? _selectedTableKey;
 
   static const _statuses = [
-    'all', 'pending', 'confirmed', 'preparing', 'ready', 'served', 'cancelled'
+    'all',
+    'pending',
+    'confirmed',
+    'preparing',
+    'ready',
+    'served',
+    'cancelled'
   ];
 
   static const _statusConfig = {
-    'pending':   (Color(0xFFFFF3E0), Color(0xFFBF5500), Icons.hourglass_empty_rounded),
+    'pending': (
+      Color(0xFFFFF3E0),
+      Color(0xFFBF5500),
+      Icons.hourglass_empty_rounded
+    ),
     'confirmed': (Color(0xFFE3F2FD), Color(0xFF1565C0), Icons.check_rounded),
-    'preparing': (Color(0xFFFFF8E1), Color(0xFFF57C00), Icons.soup_kitchen_rounded),
-    'ready':     (Color(0xFFE8F5E9), Color(0xFF2E7D32), Icons.check_circle_rounded),
-    'served':    (Color(0xFFE0F2F1), Color(0xFF00695C), Icons.restaurant_rounded),
+    'preparing': (
+      Color(0xFFFFF8E1),
+      Color(0xFFF57C00),
+      Icons.soup_kitchen_rounded
+    ),
+    'ready': (Color(0xFFE8F5E9), Color(0xFF2E7D32), Icons.check_circle_rounded),
+    'served': (Color(0xFFE0F2F1), Color(0xFF00695C), Icons.restaurant_rounded),
     'cancelled': (Color(0xFFFFEBEE), Color(0xFFE53935), Icons.cancel_rounded),
   };
 
@@ -108,8 +116,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           callback: (_) {
             if (!_disposed && mounted) {
               _debounce?.cancel();
-              _debounce =
-                  Timer(const Duration(milliseconds: 300), _load);
+              _debounce = Timer(const Duration(milliseconds: 300), _load);
             }
           })
       ..subscribe();
@@ -132,8 +139,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Future<void> _load() async {
     final data = await _sb
         .from('orders')
-        .select(
-            '*, tables(table_number, section), employees(full_name)')
+        .select('*, tables(table_number, section), employees(full_name)')
         .eq('restaurant_id', _restaurantId!)
         .not('status', 'in', '("completed","billed")')
         .order('created_at', ascending: false)
@@ -158,8 +164,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  Future<void> _onItemChanged(
-      PostgresChangePayload payload) async {
+  Future<void> _onItemChanged(PostgresChangePayload payload) async {
     final orderId = (payload.newRecord['order_id'] ??
         payload.oldRecord['order_id']) as String?;
     if (orderId == null) return;
@@ -173,8 +178,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         .select()
         .eq('order_id', orderId)
         .order('created_at');
-    _orderItemsCache[orderId] =
-        List<Map<String, dynamic>>.from(items);
+    _orderItemsCache[orderId] = List<Map<String, dynamic>>.from(items);
   }
 
   void _clearTableCache(String tableKey) {
@@ -184,12 +188,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  List<Map<String, dynamic>> get _filtered =>
-      _filterStatus == 'all'
-          ? _orders
-          : _orders
-              .where((o) => o['status'] == _filterStatus)
-              .toList();
+  List<Map<String, dynamic>> get _filtered => _filterStatus == 'all'
+      ? _orders
+      : _orders.where((o) => o['status'] == _filterStatus).toList();
 
   Map<String, List<Map<String, dynamic>>> get _groupedByTable {
     final Map<String, List<Map<String, dynamic>>> grouped = {};
@@ -210,10 +211,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
     final sorted = Map.fromEntries(grouped.entries.toList()
       ..sort((a, b) {
-        final aActive = a.value.any((o) =>
-            !['served', 'cancelled'].contains(o['status']));
-        final bActive = b.value.any((o) =>
-            !['served', 'cancelled'].contains(o['status']));
+        final aActive =
+            a.value.any((o) => !['served', 'cancelled'].contains(o['status']));
+        final bActive =
+            b.value.any((o) => !['served', 'cancelled'].contains(o['status']));
         if (aActive && !bActive) return -1;
         if (!aActive && bActive) return 1;
         return a.key.compareTo(b.key);
@@ -222,9 +223,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Future<void> _updateStatus(String id, String status) async {
-    await _sb
-        .from('orders')
-        .update({'status': status}).eq('id', id);
+    await _sb.from('orders').update({'status': status}).eq('id', id);
     final idx = _orders.indexWhere((o) => o['id'] == id);
     if (idx != -1) {
       _safeSetState(() => _orders[idx]['status'] = status);
@@ -232,13 +231,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _nextStatus(Map<String, dynamic> o) {
-    const flow = [
-      'pending',
-      'confirmed',
-      'preparing',
-      'ready',
-      'served'
-    ];
+    const flow = ['pending', 'confirmed', 'preparing', 'ready', 'served'];
     final cur = o['status'] as String? ?? 'pending';
     final idx = flow.indexOf(cur);
     if (idx >= 0 && idx < flow.length - 1) {
@@ -261,24 +254,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final fmt = NumberFormat.currency(
-        symbol: RestaurantService.instance.symbol,
-        decimalDigits: 2);
+        symbol: RestaurantService.instance.symbol, decimalDigits: 2);
     final activeCount = _orders
-        .where((o) => ![
-              'served',
-              'cancelled',
-              ..._billedStatuses
-            ].contains(o['status']))
+        .where((o) =>
+            !['served', 'cancelled', ..._billedStatuses].contains(o['status']))
         .length;
 
     return _loading
         ? Center(
-            child: Lottie.asset(
-        'assets/animations/loader.json',
-        width: 200,
-        height: 200,
-        fit: BoxFit.contain,
-      ),)
+            child: Lottie.asset('assets/animations/loader.json',
+                width: 200, height: 200, fit: BoxFit.contain))
         : Column(children: [
             _buildHeader(isMobile, activeCount),
             const Divider(color: AppColors.divider, height: 1),
@@ -294,63 +279,79 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _buildHeader(bool isMobile, int activeCount) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          isMobile ? 14 : 24, 16, isMobile ? 14 : 24, 12),
+      padding:
+          EdgeInsets.fromLTRB(isMobile ? 14 : 24, 14, isMobile ? 14 : 24, 10),
       color: AppColors.contentBg,
-      child: Column(children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Orders', style: AppText.h1),
-                Text(
-                    '${_filtered.length} orders · $activeCount active',
-                    style: AppText.body),
-              ]),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Orders', style: AppText.h1),
+            Text('${_filtered.length} orders · $activeCount active',
+                style: AppText.body),
+          ]),
           const Spacer(),
         ]),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
+
+        // ── Filter chips ──────────────────────────────────────────
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-              children: _statuses.skip(1).map((s) {
-            final count =
-                _orders.where((o) => o['status'] == s).length;
-            final (bg, fg, icon) = _statusConfig[s] ??
-                (AppColors.contentBg, AppColors.textMid,
-                    Icons.circle_outlined);
-            final active = _filterStatus == s;
-            return GestureDetector(
-              onTap: () => _safeSetState(() {
-                _filterStatus =
-                    s == _filterStatus ? 'all' : s;
-                _selectedTableKey = null;
-              }),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
+            children: _statuses.map((s) {
+              final isAll = s == 'all';
+              final count = isAll
+                  ? _orders.length
+                  : _orders.where((o) => o['status'] == s).length;
+              final active = _filterStatus == s;
+
+              // Style for "All" chip
+              const allBg = Color(0xFFF0F4F3);
+              const allFg = Color(0xFF2E6B62);
+
+              final (bg, fg, icon) = isAll
+                  ? (allBg, allFg, Icons.grid_view_rounded)
+                  : (_statusConfig[s] ??
+                      (
+                        AppColors.contentBg,
+                        AppColors.textMid,
+                        Icons.circle_outlined
+                      ));
+
+              return GestureDetector(
+                // FIX: tapping the already-active chip does nothing
+                onTap: active
+                    ? null
+                    : () => _safeSetState(() {
+                          _filterStatus = s;
+                          _selectedTableKey = null;
+                        }),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
                     color: active ? fg : bg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: fg.withOpacity(active ? 1 : 0.3))),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(icon,
-                      size: 13,
-                      color: active ? Colors.white : fg),
-                  const SizedBox(width: 5),
-                  Text(
-                      '${s[0].toUpperCase()}${s.substring(1)} ($count)',
+                        color: fg.withOpacity(active ? 1 : 0.3), width: 1.5),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(icon, size: 12, color: active ? Colors.white : fg),
+                    const SizedBox(width: 5),
+                    Text(
+                      isAll
+                          ? 'All ($count)'
+                          : '${s[0].toUpperCase()}${s.substring(1)} ($count)',
                       style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: active ? Colors.white : fg)),
-                ]),
-              ),
-            );
-          }).toList()),
+                          color: active ? Colors.white : fg),
+                    ),
+                  ]),
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ]),
     );
@@ -359,7 +360,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _buildDesktopLayout(NumberFormat fmt) {
     return Row(children: [
       if (_selectedTableKey != null)
-        SizedBox(width: 380, child: _buildTableGrid(fmt))
+        SizedBox(width: 360, child: _buildTableGrid(fmt))
       else
         Expanded(child: _buildTableGrid(fmt)),
       if (_selectedTableKey != null) ...[
@@ -379,17 +380,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final isMobile = Responsive.isMobile(context);
     final cols = _selectedTableKey != null
         ? 2
-        : Responsive.gridCount(context,
-            mobile: 2, tablet: 3, desktop: 4);
+        : Responsive.gridCount(context, mobile: 2, tablet: 3, desktop: 4);
 
     return GridView.builder(
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      padding: EdgeInsets.all(isMobile ? 10 : 14),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: cols,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio:
-            _selectedTableKey != null ? 0.9 : 1.1,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        // FIX: tighter aspect ratio so cards are compact with less whitespace
+        childAspectRatio: _selectedTableKey != null ? 1.1 : 1.45,
       ),
       itemCount: grouped.length,
       itemBuilder: (_, i) {
@@ -410,8 +410,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildDetailPanel(NumberFormat fmt) {
-    final tableOrders =
-        _groupedByTable[_selectedTableKey] ?? [];
+    final tableOrders = _groupedByTable[_selectedTableKey] ?? [];
     final isMobile = Responsive.isMobile(context);
 
     final tableTotal = tableOrders
@@ -427,8 +426,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final allServed = tableOrders.isNotEmpty &&
         tableOrders
             .where((o) => o['status'] != 'cancelled')
-            .every((o) =>
-                ['served', 'ready'].contains(o['status']));
+            .every((o) => ['served', 'ready'].contains(o['status']));
 
     const priority = [
       'preparing',
@@ -446,24 +444,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
       }
     }
     final (_, accentFg, _) = _statusConfig[topStatus] ??
-        (AppColors.contentBg, AppColors.primary,
-            Icons.circle_outlined);
+        (AppColors.contentBg, AppColors.primary, Icons.circle_outlined);
 
-    final isParcel =
-        _selectedTableKey?.startsWith('📦') ?? false;
+    final isParcel = _selectedTableKey?.startsWith('📦') ?? false;
 
     return Container(
       color: AppColors.contentBg,
       child: Column(children: [
         Container(
-          padding:
-              const EdgeInsets.fromLTRB(20, 16, 20, 14),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
           color: AppColors.cardBg,
           child: Row(children: [
             if (isMobile)
               GestureDetector(
-                onTap: () => _safeSetState(
-                    () => _selectedTableKey = null),
+                onTap: () => _safeSetState(() => _selectedTableKey = null),
                 child: Container(
                   margin: const EdgeInsets.only(right: 12),
                   width: 34,
@@ -471,12 +465,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   decoration: BoxDecoration(
                       color: AppColors.contentBg,
                       borderRadius: BorderRadius.circular(9),
-                      border:
-                          Border.all(color: AppColors.border)),
-                  child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 14,
-                      color: AppColors.textMid),
+                      border: Border.all(color: AppColors.border)),
+                  child: const Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 14, color: AppColors.textMid),
                 ),
               ),
             Container(
@@ -484,61 +475,44 @@ class _OrdersScreenState extends State<OrdersScreen> {
               height: 40,
               decoration: BoxDecoration(
                   color: isParcel
-                      ? const Color(0xFF7B3FF2)
-                          .withOpacity(0.12)
+                      ? const Color(0xFF7B3FF2).withOpacity(0.12)
                       : accentFg.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(11)),
               child: Icon(
                 isParcel
                     ? Icons.inventory_2_outlined
                     : Icons.table_restaurant_rounded,
-                color: isParcel
-                    ? const Color(0xFF7B3FF2)
-                    : accentFg,
+                color: isParcel ? const Color(0xFF7B3FF2) : accentFg,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-              Text(_selectedTableKey!,
-                  style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark)),
-              Text(
-                  '${tableOrders.length} order${tableOrders.length != 1 ? 's' : ''}',
-                  style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textMid)),
-            ])),
+                  Text(_selectedTableKey!,
+                      style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark)),
+                  Text(
+                      '${tableOrders.length} order${tableOrders.length != 1 ? 's' : ''}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textMid)),
+                ])),
             if (allServed) ...[
-              Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                Text(
-                    RestaurantService.instance
-                        .formatPrice(tableTotal),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(RestaurantService.instance.formatPrice(tableTotal),
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        color: isParcel
-                            ? const Color(0xFF7B3FF2)
-                            : accentFg)),
+                        color: isParcel ? const Color(0xFF7B3FF2) : accentFg)),
                 const Text('Table Total',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMid)),
+                    style: TextStyle(fontSize: 11, color: AppColors.textMid)),
               ]),
               const SizedBox(width: 10),
               ElevatedButton.icon(
-                // ── KEY FIX: instead of Navigator.push with a
-                //    full Scaffold, call onBill() to pass billing
-                //    data up to the layout, then onNavigate(8) to
-                //    switch the content panel to BillingScreen. ──
                 onPressed: () {
                   final key = _selectedTableKey!;
                   widget.onBill?.call(
@@ -548,12 +522,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     restaurantId: _restaurantId,
                   );
                   _clearTableCache(key);
-                  _safeSetState(
-                      () => _selectedTableKey = null);
+                  _safeSetState(() => _selectedTableKey = null);
                   widget.onNavigate?.call(8);
                 },
-                icon: const Icon(Icons.receipt_long_rounded,
-                    size: 15),
+                icon: const Icon(Icons.receipt_long_rounded, size: 15),
                 label: const Text('Generate Bill'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isParcel
@@ -561,40 +533,33 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       : const Color(0xFF00695C),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                   textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
+                      fontSize: 12, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ]),
         ),
-
         const Divider(color: AppColors.divider, height: 1),
-
         Expanded(
           child: tableOrders.isEmpty
-              ? const Center(
-                  child:
-                      Text('No orders for this table'))
+              ? const Center(child: Text('No orders for this table'))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: tableOrders.length,
                   itemBuilder: (_, i) {
                     final o = tableOrders[i];
-                    final items =
-                        _orderItemsCache[o['id']] ?? [];
+                    final items = _orderItemsCache[o['id']] ?? [];
                     return _OrderDetailCard(
                       order: o,
                       items: items,
                       statusConfig: _statusConfig,
                       fmt: fmt,
-                      onStatusChange: (s) =>
-                          _updateStatus(o['id'], s),
+                      onStatusChange: (s) => _updateStatus(o['id'], s),
                       onNextStatus: () => _nextStatus(o),
                     );
                   },
@@ -605,9 +570,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildEmpty() => Center(
-      child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(
             width: 70,
             height: 70,
@@ -619,13 +582,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
         const SizedBox(height: 14),
         const Text('No orders found', style: AppText.h4),
         const SizedBox(height: 6),
-        const Text('Orders will appear here in real time',
-            style: AppText.body),
+        const Text('Orders will appear here in real time', style: AppText.body),
       ]));
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Table Grid Card
+//  Table Grid Card — compact, less whitespace
 // ─────────────────────────────────────────────────────────────
 class _TableGridCard extends StatelessWidget {
   final String tableLabel;
@@ -644,12 +606,8 @@ class _TableGridCard extends StatelessWidget {
     required this.onTap,
   });
 
-  bool get _hasActive => orders.any((o) => ![
-        'served',
-        'cancelled',
-        'completed',
-        'billed'
-      ].contains(o['status']));
+  bool get _hasActive => orders.any((o) =>
+      !['served', 'cancelled', 'completed', 'billed'].contains(o['status']));
 
   bool get _isParcel => tableLabel.startsWith('📦');
 
@@ -671,147 +629,127 @@ class _TableGridCard extends StatelessWidget {
       }
     }
     final (bg, fg, icon) = statusConfig[topStatus] ??
-        (AppColors.contentBg, AppColors.textMid,
-            Icons.circle_outlined);
+        (AppColors.contentBg, AppColors.textMid, Icons.circle_outlined);
 
     final activeOrders = orders
-        .where((o) => ![
-              'served',
-              'cancelled',
-              'completed',
-              'billed'
-            ].contains(o['status']))
+        .where((o) => !['served', 'cancelled', 'completed', 'billed']
+            .contains(o['status']))
         .toList();
 
     final cardFg = _isParcel ? const Color(0xFF7B3FF2) : fg;
 
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         decoration: BoxDecoration(
-          color: isSelected
-              ? cardFg.withOpacity(0.08)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? cardFg.withOpacity(0.07) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
               color: isSelected
                   ? cardFg
-                  : (_hasActive
-                      ? cardFg.withOpacity(0.35)
-                      : AppColors.border),
-              width: isSelected ? 2 : 1.5),
-          boxShadow: [
+                  : (_hasActive ? cardFg.withOpacity(0.35) : AppColors.border),
+              width: 1.5),
+          boxShadow: const [
             BoxShadow(
-                color: isSelected
-                    ? cardFg.withOpacity(0.15)
-                    : AppColors.shadow,
-                blurRadius: isSelected ? 16 : 8,
-                offset: const Offset(0, 3))
+                color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))
           ],
         ),
+        // FIX: compact padding, horizontal layout to reduce height
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // ── Top row: icon + status badge ──
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                         color: _hasActive
                             ? cardFg.withOpacity(0.12)
                             : AppColors.contentBg,
-                        borderRadius:
-                            BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(9)),
                     child: Icon(
                       _isParcel
                           ? Icons.inventory_2_outlined
                           : Icons.table_restaurant_rounded,
-                      color: _hasActive
-                          ? cardFg
-                          : AppColors.textLight,
-                      size: 20,
+                      color: _hasActive ? cardFg : AppColors.textLight,
+                      size: 17,
                     ),
                   ),
                   const Spacer(),
                   if (_hasActive)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 3),
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                          color: cardFg.withOpacity(0.12),
-                          borderRadius:
-                              BorderRadius.circular(20)),
-                      child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icon,
-                                size: 9, color: cardFg),
-                            const SizedBox(width: 3),
-                            Text(
-                                topStatus[0].toUpperCase() +
-                                    topStatus.substring(1),
-                                style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: cardFg)),
-                          ]),
+                          color: cardFg.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(icon, size: 8, color: cardFg),
+                        const SizedBox(width: 3),
+                        Text(
+                            topStatus[0].toUpperCase() + topStatus.substring(1),
+                            style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                color: cardFg)),
+                      ]),
                     ),
-                ]),
-                const SizedBox(height: 10),
-                Text(tableLabel,
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1),
-                const SizedBox(height: 4),
-                Text(
-                  activeOrders.isEmpty
-                      ? 'No active orders'
-                      : '${activeOrders.length} active order${activeOrders.length != 1 ? 's' : ''}',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: _hasActive
-                          ? cardFg
-                          : AppColors.textLight,
-                      fontWeight: FontWeight.w600),
-                ),
-                const Spacer(),
-                if (activeOrders.isNotEmpty) ...[
-                  Row(
-                      children:
-                          activeOrders.take(4).map((o) {
-                    final s =
-                        o['status'] as String? ?? 'pending';
-                    final (_, sfg, _) = statusConfig[s] ??
-                        (AppColors.contentBg,
-                            AppColors.textMid,
-                            Icons.circle_outlined);
-                    return Container(
-                      width: 8,
-                      height: 8,
-                      margin:
-                          const EdgeInsets.only(right: 4),
-                      decoration: BoxDecoration(
-                          color: sfg,
-                          shape: BoxShape.circle),
-                    );
-                  }).toList()),
-                  const SizedBox(height: 8),
                 ],
-                Row(children: [
+              ),
+
+              // ── Table label ──
+              Text(tableLabel,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1),
+
+              // ── Bottom row: order count + dots + arrow ──
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    activeOrders.isEmpty
+                        ? 'No active orders'
+                        : '${activeOrders.length} active',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        color: _hasActive ? cardFg : AppColors.textLight,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 6),
+                  ...activeOrders.take(3).map((o) {
+                    final s = o['status'] as String? ?? 'pending';
+                    final (_, sfg, _) = statusConfig[s] ??
+                        (
+                          AppColors.contentBg,
+                          AppColors.textMid,
+                          Icons.circle_outlined
+                        );
+                    return Container(
+                      width: 7,
+                      height: 7,
+                      margin: const EdgeInsets.only(right: 3),
+                      decoration:
+                          BoxDecoration(color: sfg, shape: BoxShape.circle),
+                    );
+                  }),
                   const Spacer(),
                   Icon(Icons.chevron_right_rounded,
-                      size: 18,
-                      color: isSelected
-                          ? cardFg
-                          : AppColors.textLight),
-                ]),
-              ]),
+                      size: 16,
+                      color: isSelected ? cardFg : AppColors.textLight),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -819,7 +757,7 @@ class _TableGridCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Order Detail Card
+//  Order Detail Card — unchanged
 // ─────────────────────────────────────────────────────────────
 class _OrderDetailCard extends StatefulWidget {
   final Map<String, dynamic> order;
@@ -839,8 +777,7 @@ class _OrderDetailCard extends StatefulWidget {
   });
 
   @override
-  State<_OrderDetailCard> createState() =>
-      _OrderDetailCardState();
+  State<_OrderDetailCard> createState() => _OrderDetailCardState();
 }
 
 class _OrderDetailCardState extends State<_OrderDetailCard> {
@@ -848,24 +785,17 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
 
   DateTime? _parseUtc(String? raw) {
     if (raw == null) return null;
-    final normalized =
-        raw.endsWith('Z') ? raw : '${raw}Z';
+    final normalized = raw.endsWith('Z') ? raw : '${raw}Z';
     return DateTime.tryParse(normalized)?.toLocal();
   }
 
   @override
   Widget build(BuildContext context) {
-    final status =
-        widget.order['status'] as String? ?? 'pending';
+    final status = widget.order['status'] as String? ?? 'pending';
     final (bg, fg, icon) = widget.statusConfig[status] ??
-        (AppColors.contentBg, AppColors.textMid,
-            Icons.circle_outlined);
-    final isDone = [
-      'served',
-      'cancelled',
-      'completed',
-      'billed'
-    ].contains(status);
+        (AppColors.contentBg, AppColors.textMid, Icons.circle_outlined);
+    final isDone =
+        ['served', 'cancelled', 'completed', 'billed'].contains(status);
     final emp = widget.order['employees'] as Map?;
     final dt = _parseUtc(widget.order['created_at']);
     final fmt = widget.fmt;
@@ -874,8 +804,7 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
         0,
         (s, i) =>
             s +
-            ((i['item_price'] as num? ?? 0) *
-                (i['quantity'] as int? ?? 1)));
+            ((i['item_price'] as num? ?? 0) * (i['quantity'] as int? ?? 1)));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -883,69 +812,49 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: isDone
-                ? AppColors.border
-                : fg.withOpacity(0.25),
+            color: isDone ? AppColors.border : fg.withOpacity(0.25),
             width: isDone ? 1 : 1.5),
         boxShadow: [
           BoxShadow(
-              color: isDone
-                  ? AppColors.shadow
-                  : fg.withOpacity(0.08),
+              color: isDone ? AppColors.shadow : fg.withOpacity(0.08),
               blurRadius: 10,
               offset: const Offset(0, 2))
         ],
       ),
       child: Column(children: [
         InkWell(
-          onTap: () =>
-              setState(() => _expanded = !_expanded),
-          borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(14)),
+          onTap: () => setState(() => _expanded = !_expanded),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
           child: Container(
-            padding:
-                const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             decoration: BoxDecoration(
-                color: isDone
-                    ? AppColors.contentBg
-                    : bg.withOpacity(0.5),
-                borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(13))),
+                color: isDone ? AppColors.contentBg : bg.withOpacity(0.5),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(13))),
             child: Row(children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                     color: isDone
                         ? AppColors.border.withOpacity(0.5)
                         : fg.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8)),
-                child: Text(
-                    '#${widget.order['order_number']}',
+                child: Text('#${widget.order['order_number']}',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
-                        color: isDone
-                            ? AppColors.textLight
-                            : fg)),
+                        color: isDone ? AppColors.textLight : fg)),
               ),
               const SizedBox(width: 10),
               Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon,
-                    size: 13,
-                    color: isDone
-                        ? AppColors.textLight
-                        : fg),
+                Icon(icon, size: 13, color: isDone ? AppColors.textLight : fg),
                 const SizedBox(width: 4),
-                Text(
-                    status[0].toUpperCase() +
-                        status.substring(1),
+                Text(status[0].toUpperCase() + status.substring(1),
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: isDone
-                            ? AppColors.textLight
-                            : fg)),
+                        color: isDone ? AppColors.textLight : fg)),
               ]),
               const Spacer(),
               if (dt != null) ...[
@@ -959,29 +868,22 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
               AnimatedRotation(
                 turns: _expanded ? 0.5 : 0,
                 duration: const Duration(milliseconds: 200),
-                child: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 20,
-                    color: AppColors.textMid),
+                child: const Icon(Icons.keyboard_arrow_down_rounded,
+                    size: 20, color: AppColors.textMid),
               ),
             ]),
           ),
         ),
-
-        if (emp != null ||
-            widget.order['customer_name'] != null)
+        if (emp != null || widget.order['customer_name'] != null)
           Padding(
-            padding:
-                const EdgeInsets.fromLTRB(14, 8, 14, 0),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
             child: Row(children: [
               Container(
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                    color: widget.order['order_type'] ==
-                            'parcel'
-                        ? const Color(0xFF7B3FF2)
-                            .withOpacity(0.1)
+                    color: widget.order['order_type'] == 'parcel'
+                        ? const Color(0xFF7B3FF2).withOpacity(0.1)
                         : AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle),
                 child: Icon(
@@ -989,8 +891,7 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
                       ? Icons.person_outline_rounded
                       : Icons.person_rounded,
                   size: 13,
-                  color: widget.order['order_type'] ==
-                          'parcel'
+                  color: widget.order['order_type'] == 'parcel'
                       ? const Color(0xFF7B3FF2)
                       : AppColors.primary,
                 ),
@@ -998,84 +899,64 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
               const SizedBox(width: 7),
               Text(
                   widget.order['order_type'] == 'parcel'
-                      ? (widget.order['customer_name'] ??
-                          'Customer')
+                      ? (widget.order['customer_name'] ?? 'Customer')
                       : (emp?['full_name'] ?? 'Unknown'),
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textMid)),
               const SizedBox(width: 6),
-              Text(
-                  _orderType(
-                      widget.order['order_type']),
+              Text(_orderType(widget.order['order_type']),
                   style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textLight)),
+                      fontSize: 11, color: AppColors.textLight)),
             ]),
           ),
-
         AnimatedCrossFade(
           duration: const Duration(milliseconds: 200),
-          crossFadeState: _expanded
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
+          crossFadeState:
+              _expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
           firstChild: Padding(
-            padding:
-                const EdgeInsets.fromLTRB(14, 12, 14, 0),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
             child: widget.items.isEmpty
                 ? Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                         color: AppColors.contentBg,
-                        borderRadius:
-                            BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10)),
                     child: const Center(
                         child: Text('Loading items...',
                             style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textLight))),
+                                fontSize: 12, color: AppColors.textLight))),
                   )
                 : Column(children: [
                     const Padding(
-                      padding:
-                          EdgeInsets.fromLTRB(4, 0, 4, 8),
+                      padding: EdgeInsets.fromLTRB(4, 0, 4, 8),
                       child: Row(children: [
                         SizedBox(width: 32),
-                        Expanded(
-                            child: Text('ITEM',
-                                style: AppText.label)),
+                        Expanded(child: Text('ITEM', style: AppText.label)),
                         SizedBox(
                             width: 40,
                             child: Text('QTY',
                                 style: AppText.label,
-                                textAlign:
-                                    TextAlign.center)),
+                                textAlign: TextAlign.center)),
                         SizedBox(
                             width: 70,
                             child: Text('PRICE',
                                 style: AppText.label,
-                                textAlign:
-                                    TextAlign.right)),
+                                textAlign: TextAlign.right)),
                       ]),
                     ),
-                    ...widget.items.asMap().entries.map(
-                        (entry) {
+                    ...widget.items.asMap().entries.map((entry) {
                       final idx = entry.key;
                       final item = entry.value;
-                      final itemDone =
-                          item['status'] == 'ready' ||
-                              item['status'] == 'served';
+                      final itemDone = item['status'] == 'ready' ||
+                          item['status'] == 'served';
                       final lineTotal =
-                          (item['item_price'] as num? ?? 0)
-                                  .toDouble() *
-                              (item['quantity'] as int? ??
-                                  1);
+                          (item['item_price'] as num? ?? 0).toDouble() *
+                              (item['quantity'] as int? ?? 1);
                       return AnimatedContainer(
-                        duration: Duration(
-                            milliseconds: 150 + idx * 30),
-                        margin:
-                            const EdgeInsets.only(bottom: 6),
+                        duration: Duration(milliseconds: 150 + idx * 30),
+                        margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 9),
                         decoration: BoxDecoration(
@@ -1084,12 +965,10 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
                                 : isDone
                                     ? AppColors.contentBg
                                     : fg.withOpacity(0.04),
-                            borderRadius:
-                                BorderRadius.circular(9),
+                            borderRadius: BorderRadius.circular(9),
                             border: Border.all(
                                 color: itemDone
-                                    ? AppColors.green
-                                        .withOpacity(0.25)
+                                    ? AppColors.green.withOpacity(0.25)
                                     : AppColors.border)),
                         child: Row(children: [
                           Container(
@@ -1098,94 +977,70 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                                 color: itemDone
-                                    ? AppColors.green
-                                        .withOpacity(0.12)
+                                    ? AppColors.green.withOpacity(0.12)
                                     : fg.withOpacity(0.12),
-                                borderRadius:
-                                    BorderRadius.circular(7)),
+                                borderRadius: BorderRadius.circular(7)),
                             child: itemDone
-                                ? const Icon(
-                                    Icons.check_rounded,
-                                    size: 14,
-                                    color: AppColors.green)
-                                : Text(
-                                    '${item['quantity']}',
+                                ? const Icon(Icons.check_rounded,
+                                    size: 14, color: AppColors.green)
+                                : Text('${item['quantity']}',
                                     style: TextStyle(
                                         fontSize: 12,
-                                        fontWeight:
-                                            FontWeight.w800,
+                                        fontWeight: FontWeight.w800,
                                         color: fg)),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                              Text(item['item_name'] ?? '',
-                                  style: TextStyle(
-                                      fontWeight:
-                                          FontWeight.w700,
-                                      fontSize: 13,
-                                      color: itemDone
-                                          ? AppColors.textLight
-                                          : AppColors.textDark,
-                                      decoration: itemDone
-                                          ? TextDecoration
-                                              .lineThrough
-                                          : null)),
-                              if ((item['notes'] as String?)
-                                      ?.isNotEmpty ==
-                                  true)
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(
-                                          top: 2),
-                                  child: Row(children: [
-                                    const Icon(
-                                        Icons.notes_rounded,
-                                        size: 10,
-                                        color:
-                                            AppColors.orange),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                          item['notes']
-                                              as String,
-                                          style: const TextStyle(
-                                              fontSize: 10,
-                                              color: AppColors
-                                                  .orange,
-                                              fontWeight:
-                                                  FontWeight
-                                                      .w600)),
+                                  Text(item['item_name'] ?? '',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          color: itemDone
+                                              ? AppColors.textLight
+                                              : AppColors.textDark,
+                                          decoration: itemDone
+                                              ? TextDecoration.lineThrough
+                                              : null)),
+                                  if ((item['notes'] as String?)?.isNotEmpty ==
+                                      true)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Row(children: [
+                                        const Icon(Icons.notes_rounded,
+                                            size: 10, color: AppColors.orange),
+                                        const SizedBox(width: 3),
+                                        Flexible(
+                                          child: Text(item['notes'] as String,
+                                              style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: AppColors.orange,
+                                                  fontWeight: FontWeight.w600)),
+                                        ),
+                                      ]),
                                     ),
-                                  ]),
-                                ),
-                            ]),
+                                ]),
                           ),
                           SizedBox(
                             width: 40,
-                            child: Text(
-                                '×${item['quantity']}',
+                            child: Text('×${item['quantity']}',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     fontSize: 13,
                                     color: itemDone
                                         ? AppColors.textLight
                                         : AppColors.textMid,
-                                    fontWeight:
-                                        FontWeight.w600)),
+                                    fontWeight: FontWeight.w600)),
                           ),
                           SizedBox(
                             width: 70,
-                            child: Text(
-                                fmt.format(lineTotal),
+                            child: Text(fmt.format(lineTotal),
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight:
-                                        FontWeight.w800,
+                                    fontWeight: FontWeight.w800,
                                     color: itemDone
                                         ? AppColors.textLight
                                         : AppColors.textDark)),
@@ -1197,31 +1052,24 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
           ),
           secondChild: const SizedBox.shrink(),
         ),
-
         Padding(
-          padding:
-              const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
           child: Column(children: [
-            const Divider(
-                color: AppColors.divider, height: 1),
+            const Divider(color: AppColors.divider, height: 1),
             const SizedBox(height: 10),
-
             if (status == 'served') ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                     color: const Color(0xFFE0F2F1),
-                    borderRadius:
-                        BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: const Color(0xFF00695C)
-                            .withOpacity(0.3))),
+                        color: const Color(0xFF00695C).withOpacity(0.3))),
                 child: Row(children: [
                   const Icon(Icons.receipt_rounded,
-                      size: 16,
-                      color: Color(0xFF00695C)),
+                      size: 16, color: Color(0xFF00695C)),
                   const SizedBox(width: 8),
                   const Text('Order Total',
                       style: TextStyle(
@@ -1238,26 +1086,19 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
               ),
               const SizedBox(height: 10),
             ],
-
             if (!isDone)
               Row(children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () =>
-                        widget.onStatusChange('cancelled'),
-                    icon: const Icon(Icons.close_rounded,
-                        size: 15),
+                    onPressed: () => widget.onStatusChange('cancelled'),
+                    icon: const Icon(Icons.close_rounded, size: 15),
                     label: const Text('Cancel'),
                     style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.red,
-                        side: BorderSide(
-                            color: AppColors.red
-                                .withOpacity(0.4)),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 10),
+                        side: BorderSide(color: AppColors.red.withOpacity(0.4)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         textStyle: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700)),
+                            fontSize: 12, fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1265,23 +1106,17 @@ class _OrderDetailCardState extends State<_OrderDetailCard> {
                   flex: 2,
                   child: ElevatedButton.icon(
                     onPressed: widget.onNextStatus,
-                    icon: const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15),
-                    label: Text(
-                        '→ ${_nextStatusLabel(status)}'),
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                    label: Text('→ ${_nextStatusLabel(status)}'),
                     style: ElevatedButton.styleFrom(
                         backgroundColor: fg,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(9)),
+                            borderRadius: BorderRadius.circular(9)),
                         textStyle: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800)),
+                            fontSize: 12, fontWeight: FontWeight.w800)),
                   ),
                 ),
               ]),

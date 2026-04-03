@@ -33,6 +33,7 @@ class _ParcelScreenState extends State<ParcelScreen> {
   final _menuSearchCtrl = TextEditingController();
 
   final Map<String, _CartItem> _cart = {};
+  final _categoryScrollCtrl = ScrollController();
 
   final _customerCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
@@ -52,6 +53,7 @@ class _ParcelScreenState extends State<ParcelScreen> {
     _menuSearchCtrl.dispose();
     _customerCtrl.dispose();
     _notesCtrl.dispose();
+    _categoryScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -240,9 +242,10 @@ Widget build(BuildContext context) {
   Widget _buildMenuPanel() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      // ✅ FIX: Changed from AppColors.cardBg to Colors.white so no grey gap
       Container(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-        color: AppColors.cardBg,
+        color: Colors.white,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
@@ -287,17 +290,40 @@ Widget build(BuildContext context) {
           ),
         ]),
       ),
+      // ✅ FIX: Category bar — chips with draggable scrollbar below, no arrow buttons
       if (_categories.isNotEmpty)
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: [
-              _CategoryChip('All', null),
-              ..._categories.map((c) => _CategoryChip(c['name'] as String, c['id'] as String)),
-            ]),
-          ),
+          width: double.infinity,
+          padding: const EdgeInsets.only(top: 10, bottom: 4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Scrollbar(
+              controller: _categoryScrollCtrl,
+              thumbVisibility: false, 
+              trackVisibility: false, 
+              thickness: 2,
+              radius: const Radius.circular(10),
+              child: SingleChildScrollView(
+                controller: _categoryScrollCtrl,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+            const SizedBox(width: 16),
+            _CategoryChip('All', null),
+            ..._categories.map((c) =>
+                _CategoryChip(c['name'] as String, c['id'] as String)),
+            const SizedBox(width: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
         ),
       const Divider(color: AppColors.divider, height: 1),
       Expanded(
@@ -315,7 +341,8 @@ Widget build(BuildContext context) {
                   maxCrossAxisExtent: 220,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.82,
+                  // ✅ FIX: Increased from 0.82 to 1.05 to remove excess whitespace in cards
+                  childAspectRatio: 1.14,
                 ),
                 itemCount: _filteredItems.length,
                 itemBuilder: (_, i) => _MenuItemCard(
@@ -640,8 +667,9 @@ class _MenuItemCard extends StatelessWidget {
           blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ✅ FIX: Reduced image height slightly to balance card proportions
         Container(
-          height: 80,
+          height: 90,
           decoration: BoxDecoration(
             color: inCart ? const Color(0xFF1E6B60).withOpacity(0.06) : const Color(0xFFF5F4F0),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
@@ -656,21 +684,22 @@ class _MenuItemCard extends StatelessWidget {
               : _placeholder(inCart),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+          // ✅ FIX: Tightened padding to remove extra whitespace
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(item['name'] as String,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                     fontSize: 12.5, fontWeight: FontWeight.w700,
                     color: AppColors.textDark)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             // ✅ Dynamic currency symbol
             Text(fmt.format((item['price'] as num).toDouble()),
                 style: const TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w800,
                     color: Color(0xFF1E6B60))),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             if (qty == 0)
               SizedBox(
                 width: double.infinity,

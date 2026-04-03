@@ -580,173 +580,172 @@ class _AdminLayoutState extends State<AdminLayout> {
       ),
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20),
       child: Row(children: [
-        if (isMobile) ...[
-          IconButton(
-            icon: const Icon(Icons.menu, color: AppColors.textDark),
-            onPressed: () => _drawerKey.currentState?.openDrawer(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 10),
-        ],
-        if (!isMobile) ...[
-          Flexible(
-              child: Text(_restaurantName,
+  // ── Hamburger (mobile only) ──────────────────────────
+  if (isMobile) ...[
+    IconButton(
+      icon: const Icon(Icons.menu, color: AppColors.textDark),
+      onPressed: () => _drawerKey.currentState?.openDrawer(),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    ),
+    const SizedBox(width: 10),
+  ],
+
+  // ── Search bar ───────────────────────────────────────
+  ConstrainedBox(
+    constraints: BoxConstraints(
+        maxWidth: isMobile ? 220 : 360, minWidth: isMobile ? 120 : 200),
+    child: Container(
+      height: 38,
+      decoration: BoxDecoration(
+        color: AppColors.contentBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: _showSearch ? AppColors.primary : AppColors.border,
+            width: _showSearch ? 1.5 : 1),
+      ),
+      child: TextField(
+        controller: _searchCtrl,
+        focusNode: _searchFocus,
+        style: const TextStyle(fontSize: 13, color: AppColors.textDark),
+        decoration: InputDecoration(
+          hintText:
+              isMobile ? 'Search...' : 'Search orders, tables, menu...',
+          hintStyle:
+              const TextStyle(fontSize: 13, color: AppColors.textLight),
+          prefixIcon: _searching
+              ? Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: SizedBox(
+                      width: 14,
+                      height: 14,
+                        child: Lottie.asset(
+      'assets/animations/loader.json',
+      width: 200,
+      height: 200,
+      fit: BoxFit.contain,
+    ),))
+              : const Icon(Icons.search,
+                  size: 18, color: AppColors.textLight),
+          suffixIcon: _searchCtrl.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close,
+                      size: 15, color: AppColors.textLight),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    if (mounted)
+                      setState(() {
+                        _showSearch = false;
+                        _results = [];
+                      });
+                    _searchFocus.unfocus();
+                  })
+              : null,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          filled: false,
+        ),
+      ),
+    ),
+  ),
+
+  // ── Spacer pushes bell + profile to far right ────────
+  const Spacer(),
+
+  // ── Notification bell ────────────────────────────────
+  GestureDetector(
+    onTap: () {
+      if (!mounted) return;
+      setState(() {
+        _showNotifs = !_showNotifs;
+        _showSearch = false;
+        _searchFocus.unfocus();
+      });
+    },
+    child: Stack(clipBehavior: Clip.none, children: [
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: _showNotifs
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.contentBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: _showNotifs ? AppColors.primary : AppColors.border),
+        ),
+        child: Icon(
+            _showNotifs
+                ? Icons.notifications
+                : Icons.notifications_outlined,
+            size: 18,
+            color: _showNotifs ? AppColors.primary : AppColors.textMid),
+      ),
+      if (_unread > 0)
+        Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              constraints:
+                  const BoxConstraints(minWidth: 15, minHeight: 15),
+              decoration: const BoxDecoration(
+                  color: AppColors.red, shape: BoxShape.circle),
+              child: Text(_unread > 9 ? '9+' : '$_unread',
                   style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark),
-                  overflow: TextOverflow.ellipsis)),
-          const SizedBox(width: 20),
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center),
+            )),
+    ]),
+  ),
+  const SizedBox(width: 10),
+
+  // ── Profile ──────────────────────────────────────────
+  GestureDetector(
+    onTap: _showProfileDialog,
+    child: MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (isDesktop) ...[
+          Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(_userName.isEmpty ? 'Admin' : _userName,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark),
+                    overflow: TextOverflow.ellipsis),
+                Text(_userRole,
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textMid),
+                    overflow: TextOverflow.ellipsis),
+              ]),
+          const SizedBox(width: 8),
         ],
-        ConstrainedBox(
-          constraints: BoxConstraints(
-              maxWidth: isMobile ? 220 : 360, minWidth: isMobile ? 120 : 200),
-          child: Container(
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.contentBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: _showSearch ? AppColors.primary : AppColors.border,
-                  width: _showSearch ? 1.5 : 1),
-            ),
-            child: TextField(
-              controller: _searchCtrl,
-              focusNode: _searchFocus,
-              style: const TextStyle(fontSize: 13, color: AppColors.textDark),
-              decoration: InputDecoration(
-                hintText:
-                    isMobile ? 'Search...' : 'Search orders, tables, menu...',
-                hintStyle:
-                    const TextStyle(fontSize: 13, color: AppColors.textLight),
-                prefixIcon: _searching
-                    ? Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: SizedBox(
-                            width: 14,
-                            height: 14,
-                              child: Lottie.asset(
-        'assets/animations/loader.json',
-        width: 200,
-        height: 200,
-        fit: BoxFit.contain,
-      ),))
-                    : const Icon(Icons.search,
-                        size: 18, color: AppColors.textLight),
-                suffixIcon: _searchCtrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close,
-                            size: 15, color: AppColors.textLight),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          if (mounted)
-                            setState(() {
-                              _showSearch = false;
-                              _results = [];
-                            });
-                          _searchFocus.unfocus();
-                        })
-                    : null,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                filled: false,
-              ),
-            ),
-          ),
-        ),
-        const Spacer(flex: 3),
-        GestureDetector(
-          onTap: () {
-            if (!mounted) return;
-            setState(() {
-              _showNotifs = !_showNotifs;
-              _showSearch = false;
-              _searchFocus.unfocus();
-            });
-          },
-          child: Stack(clipBehavior: Clip.none, children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _showNotifs
-                    ? AppColors.primary.withOpacity(0.1)
-                    : AppColors.contentBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: _showNotifs ? AppColors.primary : AppColors.border),
-              ),
-              child: Icon(
-                  _showNotifs
-                      ? Icons.notifications
-                      : Icons.notifications_outlined,
-                  size: 18,
-                  color: _showNotifs ? AppColors.primary : AppColors.textMid),
-            ),
-            if (_unread > 0)
-              Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    constraints:
-                        const BoxConstraints(minWidth: 15, minHeight: 15),
-                    decoration: const BoxDecoration(
-                        color: AppColors.red, shape: BoxShape.circle),
-                    child: Text(_unread > 9 ? '9+' : '$_unread',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center),
-                  )),
-          ]),
-        ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: _showProfileDialog,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if (isDesktop) ...[
-                Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(_userName.isEmpty ? 'Admin' : _userName,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textDark),
-                          overflow: TextOverflow.ellipsis),
-                      Text(_userRole,
-                          style: const TextStyle(
-                              fontSize: 10, color: AppColors.textMid),
-                          overflow: TextOverflow.ellipsis),
-                    ]),
-                const SizedBox(width: 8),
-              ],
-              CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.primary,
-                  child: Text(initial,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700))),
-              if (isDesktop) ...[
-                const SizedBox(width: 3),
-                const Icon(Icons.expand_more,
-                    size: 14, color: AppColors.textMid),
-              ],
-            ]),
-          ),
-        ),
+        CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.primary,
+            child: Text(initial,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700))),
+        if (isDesktop) ...[
+          const SizedBox(width: 3),
+          const Icon(Icons.expand_more,
+              size: 14, color: AppColors.textMid),
+        ],
       ]),
+    ),
+  ),
+]),
     );
   }
 
@@ -1054,7 +1053,7 @@ class _SearchDropdown extends StatelessWidget {
         'assets/animations/loader.json',
         width: 200,
         height: 200,
-        fit: BoxFit.contain,
+        fit: BoxFit.contain,  
       ),))
               : results.isEmpty
                   ? Padding(

@@ -16,12 +16,15 @@ class BillingScreen extends StatefulWidget {
   final Map<String, List<Map<String, dynamic>>>? orderItemsCache;
   final String? restaurantId;
 
+  final VoidCallback? onBillHandled; // ✅ clears billing data in parent after dialog shown
+
   const BillingScreen({
     super.key,
     this.tableKey,
     this.tableOrders,
     this.orderItemsCache,
     this.restaurantId,
+    this.onBillHandled,
   });
 
   @override
@@ -256,8 +259,11 @@ class _BillingScreenState extends State<BillingScreen>
 
   List<Map<String, dynamic>> _mergeItemsFromOrders(
       List<Map<String, dynamic>> orders) {
+    // ✅ Skip cancelled orders — they should not appear in the bill
+    final activeOrders =
+        orders.where((o) => o['status'] != 'cancelled').toList();
     final merged = <String, Map<String, dynamic>>{};
-    for (final order in orders) {
+    for (final order in activeOrders) {
       final items = List<Map<String, dynamic>>.from(order['order_items'] ?? []);
       for (final item in items) {
         final name = (item['item_name'] as String?)?.trim() ?? 'Item';
@@ -1399,8 +1405,9 @@ class _BillingScreenState extends State<BillingScreen>
         !_loading &&
         !_billDialogShown) {
       _billDialogShown = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showTableBillDialog(widget.tableKey!, _hydratedTableOrders!);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _showTableBillDialog(widget.tableKey!, _hydratedTableOrders!);
+        widget.onBillHandled?.call(); // ✅ clears tableKey in parent so dialog never re-shows
       });
     }
 

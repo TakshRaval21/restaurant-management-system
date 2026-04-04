@@ -3,7 +3,7 @@ import 'package:admin_side/screens/billing/billing_screen.dart';
 import 'package:admin_side/screens/employees/employee_management_screen.dart';
 import 'package:admin_side/screens/kitchen/kitchen_display.dart';
 import 'package:admin_side/screens/menu/menu_categories_screen.dart';
-import 'package:admin_side/screens/orders/order_screen.dart';
+import 'package:admin_side/screens/orders/order_screen.dart' hide BillingScreen;
 import 'package:admin_side/screens/parcel/parcel_screen.dart';
 import 'package:admin_side/screens/qrcodes/qr_codes_screen.dart';
 import 'package:admin_side/screens/restaurant/restaurant_setting_screen.dart';

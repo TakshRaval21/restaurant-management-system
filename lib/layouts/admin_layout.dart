@@ -171,6 +171,17 @@ class _AdminLayoutState extends State<AdminLayout> {
     });
   }
 
+  // ✅ Clears billing data after dialog is shown — prevents re-popping on re-navigate
+  void _clearBillingData() {
+    if (!mounted) return;
+    setState(() {
+      _billingTableKey = null;
+      _billingTableOrders = [];
+      _billingItemsCache = {};
+      _billingRestaurantId = null;
+    });
+  }
+
   // ── Load user & restaurant ────────────────────────────────
   Future<void> _loadUser() async {
     final user = _sb.auth.currentUser;
@@ -503,9 +514,12 @@ class _AdminLayoutState extends State<AdminLayout> {
                           7 => const ParcelScreen(),
                           8 => BillingScreen(
                               tableKey: _billingTableKey,
-                              tableOrders: _billingTableOrders,
+                              tableOrders: _billingTableOrders.isEmpty
+                                  ? null
+                                  : _billingTableOrders,
                               orderItemsCache: _billingItemsCache,
                               restaurantId: _billingRestaurantId,
+                              onBillHandled: _clearBillingData, // ✅ clears key after dialog shown
                             ),
                           9 => const QrCodesScreen(),
                           10 => const AnalyticsScreen(),
